@@ -1,13 +1,13 @@
 package com.tes.jk
 
 import android.content.Context
-import android.os.Build
 import java.io.File
 
 /**
  * CppCompiler — Kompilasi file C++ menjadi shared library (.so).
+ * Menerima Context untuk mencari binary clang++ via NdkManager.
  */
-class CppCompiler(private val ndkRoot: File) {
+class CppCompiler(private val context: Context) {
 
     /**
      * Compile file sumber C++ menjadi shared library.
@@ -21,16 +21,15 @@ class CppCompiler(private val ndkRoot: File) {
         buildDir: File,
         outputFileName: String = "liboutput.so"
     ): Pair<Boolean, String> {
-        val arch = getHostArch()
-        val binDir = File(ndkRoot, "toolchains/llvm/prebuilt/linux-$arch/bin")
-        val clangpp: File = NdkManager.getClangBinary(context) ?: return Pair(false, "ERROR: clang++ tidak ditemukan")
 
-        if (!clangpp.exists()) {
-            return Pair(false, "ERROR: clang++ tidak ditemukan di ${clangpp.absolutePath}")
-        }
+        val clangpp: File = NdkManager.getClangBinary(context)
+            ?: return Pair(false, "ERROR: clang++ tidak ditemukan. Pastikan NDK sudah terinstall dengan benar.")
 
-        // Target triple berdasarkan ABI
-        val (target, apiLevel) = when (Build.SUPPORTED_ABIS.firstOrNull()) {
+        val binDir = clangpp.parentFile
+            ?: return Pair(false, "ERROR: Tidak bisa menentukan folder bin dari $clangpp")
+
+        // Target triple berdasarkan ABI device
+        val (target, apiLevel) = when (android.os.Build.SUPPORTED_ABIS.firstOrNull()) {
             "arm64-v8a" -> "aarch64-linux-android" to "21"
             "armeabi-v7a" -> "armv7a-linux-androideabi" to "21"
             "x86_64" -> "x86_64-linux-android" to "21"
@@ -39,12 +38,11 @@ class CppCompiler(private val ndkRoot: File) {
         }
 
         // Cari sysroot
-        val sysroot = findSysroot(ndkRoot, arch, apiLevel)
-            ?: return Pair(false, "ERROR: sysroot tidak ditemukan di NDK")
+        val sysroot = findSysroot(NdkManager.getNdkRoot(context))
+            ?: return Pair(false, "ERROR: sysroot tidak ditemukan di dalam NDK")
 
         val outputFile = File(buildDir, outputFileName)
 
-        // Perintah kompilasi
         val commands = arrayOf(
             clangpp.absolutePath,
             "-shared",
@@ -92,23 +90,22 @@ class CppCompiler(private val ndkRoot: File) {
     }
 
     /**
-     * Mencari folder sysroot di dalam NDK.
+     * Mencari folder sysroot di dalam NDK yang sudah diekstrak.
      */
-    private fun findSysroot(ndkRoot: File, arch: String, apiLevel: String): String? {
-        // Beberapa kemungkinan struktur sysroot
-        val candidates = listOf(
-            File(ndkRoot, "toolchains/llvm/prebuilt/linux-$arch/sysroot"),
-            File(ndkRoot, "sysroot"),
-            File(ndkRoot, "platforms/android-$apiLevel/arch-${if (arch == "aarch64") "arm64" else arch}")
-        )
-        return candidates.firstOrNull { it.exists() && it.isDirectory }?.absolutePath
-    }
-
-    private fun getHostArch(): String = when (Build.SUPPORTED_ABIS.firstOrNull()) {
-        "arm64-v8a" -> "aarch64"
-        "armeabi-v7a" -> "arm"
-        "x86_64" -> "x86_64"
-        "x86" -> "x86"
-        else -> "aarch64"
+    private fun findSysroot(ndkRoot: File): String? {
+        val prebuiltDir = File(ndkRoot, "toolchains/llvm/prebuilt")
+        if (prebuiltDir.exists()) {
+            prebuiltDir.listFiles()?.forEach { hostDir ->
+                if (hostDir.isDirectory) {
+                    // Coba path: .../prebuilt/<host>/sysroot
+                    val sysroot = File(hostDir, "sysroot")
+                    if (sysroot.exists()) return sysroot.absolutePath
+                }
+            }
+        }
+        // Alternatif: sysroot di root NDK
+        val altSysroot = File(ndkRoot, "sysroot")
+        if (altSysroot.exists()) return altSysroot.absolutePath
+        return null
     }
 }

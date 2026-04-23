@@ -7,10 +7,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import java.io.File
 
-/**
- * CompilerViewModel — Menangani proses instalasi NDK dan kompilasi.
- */
 class CompilerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _compileLog = MutableLiveData<String>()
@@ -19,9 +17,6 @@ class CompilerViewModel(application: Application) : AndroidViewModel(application
     private val _ndkStatus = MutableLiveData<Boolean>(NdkManager.isInstalled(application))
     val ndkStatus: LiveData<Boolean> = _ndkStatus
 
-    /**
-     * Install NDK dari file ZIP.
-     */
     fun installNdk(uri: Uri) {
         viewModelScope.launch {
             _compileLog.value = "⏳ Mengekstrak NDK... Mohon tunggu."
@@ -36,20 +31,16 @@ class CompilerViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /**
-     * Compile kode C++ yang diberikan.
-     * @param code String kode C++ dari EditText
-     */
     fun compileCode(code: String) {
         viewModelScope.launch {
             val context = getApplication<Application>()
             val ndkRoot = NdkManager.getNdkRoot(context)
 
-            // Buat file sementara dari kode
-            val srcFile = java.io.File(context.cacheDir, "temp.cpp")
+            val srcFile = File(context.cacheDir, "temp.cpp")
             srcFile.writeText(code)
 
-            val compiler = CppCompiler(ndkRoot)
+            // Gunakan CppCompiler dengan context
+            val compiler = CppCompiler(context)
             val (success, log) = compiler.compile(
                 sourceFile = srcFile,
                 buildDir = context.cacheDir,
@@ -60,9 +51,6 @@ class CompilerViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /**
-     * Update status NDK saat fragment dibuka.
-     */
     fun refreshNdkStatus() {
         _ndkStatus.value = NdkManager.isInstalled(getApplication())
     }

@@ -23,7 +23,7 @@ class CppCompiler(private val ndkRoot: File) {
     ): Pair<Boolean, String> {
         val arch = getHostArch()
         val binDir = File(ndkRoot, "toolchains/llvm/prebuilt/linux-$arch/bin")
-        val clangpp = File(binDir, "clang++")
+        val clangpp: File = NdkManager.getClangBinary(context) ?: return Pair(false, "ERROR: clang++ tidak ditemukan")
 
         if (!clangpp.exists()) {
             return Pair(false, "ERROR: clang++ tidak ditemukan di ${clangpp.absolutePath}")

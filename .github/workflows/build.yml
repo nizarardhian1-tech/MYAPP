@@ -8,11 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      SIGNING_ALIAS: ${{ vars.SIGNING_ALIAS }}
-      SIGNING_STORE_PASS: ${{ vars.SIGNING_STORE_PASS }}
-      SIGNING_KEY_PASS: ${{ vars.SIGNING_KEY_PASS }}
-      SIGNING_KEY_PATH: ${{ vars.SIGNING_KEY_PATH }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,4 +32,3 @@ jobs:
         with:
           name: Myapp-debug
           path: app/build/outputs/apk/debug/*.apk
-

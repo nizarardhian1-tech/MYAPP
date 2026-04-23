@@ -3,12 +3,12 @@ plugins {
 }
 
 android {
-    namespace 'com.myap.via'
+    namespace 'com.moby.app'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.myap.via"
-        minSdk 28
+        applicationId "com.moby.app"
+        minSdk 23
         targetSdk 34
         versionCode 1
         versionName "1.0"

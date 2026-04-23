@@ -3,9 +3,10 @@
     <item android:id="@+id/homeFragment"
         android:icon="@android:drawable/ic_menu_compass"
         android:title="@string/home" />
-    <item android:id="@+id/dashboardFragment"
+    <!-- Ganti dashboardFragment jadi compilerFragment -->
+    <item android:id="@+id/compilerFragment"
         android:icon="@android:drawable/ic_menu_agenda"
-        android:title="@string/dashboard" />
+        android:title="@string/compiler" />
     <item android:id="@+id/profileFragment"
         android:icon="@android:drawable/ic_menu_myplaces"
         android:title="@string/profile" />

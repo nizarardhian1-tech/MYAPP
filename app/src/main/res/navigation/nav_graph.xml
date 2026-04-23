@@ -11,10 +11,11 @@
         android:label="@string/home"
         tools:layout="@layout/fragment_home" />
 
-    <fragment android:id="@+id/dashboardFragment"
-        android:name="com.tes.jk.DashboardFragment"
-        android:label="@string/dashboard"
-        tools:layout="@layout/fragment_dashboard" />
+    <!-- Ganti DashboardFragment menjadi CompilerFragment -->
+    <fragment android:id="@+id/compilerFragment"
+        android:name="com.tes.jk.CompilerFragment"
+        android:label="@string/compiler"
+        tools:layout="@layout/fragment_compiler" />
 
     <fragment android:id="@+id/profileFragment"
         android:name="com.tes.jk.ProfileFragment"

@@ -61,6 +61,13 @@ class CompilerFragment : Fragment() {
 
         // Bind view
         etCode = view.findViewById(R.id.etCode)
+        // Set hint contoh kode C++
+etCode.hint = buildString {
+    append("#include <cstdio>\n")
+    append("extern \"C\" int add(int a, int b) {\n")
+    append("    return a + b;\n")
+    append("}")
+}
         btnCompile = view.findViewById(R.id.btnCompile)
         btnInstallNdk = view.findViewById(R.id.btnInstallNdk)
         btnSaveSo = view.findViewById(R.id.btnSaveSo)

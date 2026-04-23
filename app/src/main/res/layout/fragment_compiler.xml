@@ -45,7 +45,6 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="top|start"
-        android:hint="#include <cstdio>\n\nextern \"C\" int add(int a, int b) {\n    return a + b;\n}"
         android:inputType="textMultiLine|textNoSuggestions"
         android:typeface="monospace"
         android:textSize="12sp"

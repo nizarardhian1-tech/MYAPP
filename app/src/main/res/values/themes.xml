@@ -1,5 +1,0 @@
-<resources>
-    <style name="Theme.Myapp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- TODO: Kustomisasi tema di sini -->
-    </style>
-</resources>

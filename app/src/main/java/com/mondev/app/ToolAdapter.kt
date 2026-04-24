@@ -1,17 +1,24 @@
 package com.mondev.app
 
+import android.content.pm.PackageManager
+import android.os.Environment
+import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.text.HtmlCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import java.io.File
 
-class ToolAdapter(private val onInstallClick: ((ToolItem) -> Unit)?) :
-    ListAdapter<ToolItem, ToolAdapter.ViewHolder>(DiffCallback()) {
+class ToolAdapter(
+    private val onDownload: ((ToolItem) -> Unit)? = null,
+    private val onInstall: ((File) -> Unit)? = null
+) : ListAdapter<ToolItem, ToolAdapter.ViewHolder>(DiffCallback()) {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val ivIcon: ImageView = view.findViewById(R.id.ivIcon)
@@ -24,7 +31,7 @@ class ToolAdapter(private val onInstallClick: ((ToolItem) -> Unit)?) :
         fun bind(tool: ToolItem) {
             tvName.text = tool.name
             tvShortDesc.text = tool.shortDesc
-            tvDesc.text = tool.desc
+            tvDesc.text = HtmlCompat.fromHtml(tool.desc, HtmlCompat.FROM_HTML_MODE_LEGACY)
             tvVersion.text = "v${tool.version}"
 
             if (tool.iconUrl.isNotEmpty()) {
@@ -37,12 +44,39 @@ class ToolAdapter(private val onInstallClick: ((ToolItem) -> Unit)?) :
                 ivIcon.setImageResource(R.drawable.ic_launcher_foreground)
             }
 
-            if (onInstallClick != null) {
-                btnAction.visibility = View.VISIBLE
-                btnAction.text = "Install"
-                btnAction.setOnClickListener { onInstallClick?.invoke(tool) }
-            } else {
-                btnAction.visibility = View.GONE
+            val context = itemView.context
+            val isInstalled = isPackageInstalled(context, tool.packageName)
+            val fileName = "${tool.name}.apk"
+            val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+
+            when {
+                isInstalled -> {
+                    btnAction.text = "Installed"
+                    btnAction.isEnabled = false
+                    btnAction.alpha = 0.5f
+                }
+                file.exists() -> {
+                    btnAction.text = "Install"
+                    btnAction.isEnabled = true
+                    btnAction.alpha = 1.0f
+                    btnAction.setOnClickListener { onInstall?.invoke(file) }
+                }
+                else -> {
+                    btnAction.text = "Download"
+                    btnAction.isEnabled = true
+                    btnAction.alpha = 1.0f
+                    btnAction.setOnClickListener { onDownload?.invoke(tool) }
+                }
+            }
+        }
+
+        private fun isPackageInstalled(context: Context, packageName: String): Boolean {
+            if (packageName.isEmpty()) return false
+            return try {
+                context.packageManager.getPackageInfo(packageName, 0)
+                true
+            } catch (e: PackageManager.NameNotFoundException) {
+                false
             }
         }
     }

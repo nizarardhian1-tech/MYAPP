@@ -1,7 +1,14 @@
 package com.mondev.app
 
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.view.*
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -10,20 +17,32 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
-import android.content.Intent
-import android.net.Uri
 
 class HomeFragment : Fragment() {
 
     private val viewModel: ToolsViewModel by activityViewModels()
     private lateinit var adapter: ToolAdapter
+    private val downloadIds = mutableMapOf<Long, ToolItem>()
+
+    private val onDownloadComplete = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
+            if (id != -1L && downloadIds.containsKey(id)) {
+                // Download selesai, refresh daftar
+                refreshAdapter()
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        requireActivity().registerReceiver(
+            onDownloadComplete,
+            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -36,7 +55,10 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val rv = view.findViewById<RecyclerView>(R.id.rvTools)
-        adapter = ToolAdapter { tool -> installTool(tool) }
+        adapter = ToolAdapter(
+            onDownload = { tool -> startDownload(tool) },
+            onInstall = { file -> installApk(file) }
+        )
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = adapter
 
@@ -58,50 +80,38 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun installTool(tool: ToolItem) {
-        if (tool.apkUrl.isEmpty()) {
-            Toast.makeText(requireContext(), "APK URL not available", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        lifecycleScope.launch {
-            Toast.makeText(requireContext(), "Downloading ${tool.name}...", Toast.LENGTH_SHORT).show()
-            val file = withContext(Dispatchers.IO) {
-                downloadApk(tool.apkUrl, tool.name + ".apk")
-            }
-            if (file != null) {
-                installApk(file)
-            } else {
-                Toast.makeText(requireContext(), "Download failed", Toast.LENGTH_LONG).show()
-            }
-        }
+    override fun onResume() {
+        super.onResume()
+        refreshAdapter()
     }
 
-    private suspend fun downloadApk(url: String, fileName: String): File? {
-        return try {
-            val connection = URL(url).openConnection() as HttpURLConnection
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-            connection.requestMethod = "GET"
-            connection.connect()
+    override fun onDestroy() {
+        super.onDestroy()
+        requireActivity().unregisterReceiver(onDownloadComplete)
+    }
 
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) return null
+    private fun refreshAdapter() {
+        adapter.notifyDataSetChanged()
+    }
 
-            val file = File(requireContext().externalCacheDir, fileName)
-            val fos = FileOutputStream(file)
-            val input = connection.inputStream
-            val buffer = ByteArray(4096)
-            var len: Int
-            while (input.read(buffer).also { len = it } > 0) {
-                fos.write(buffer, 0, len)
-            }
-            fos.close()
-            input.close()
-            connection.disconnect()
-            file
-        } catch (e: Exception) {
-            null
+    private fun startDownload(tool: ToolItem) {
+        val fileName = "${tool.name}.apk"
+        val request = DownloadManager.Request(Uri.parse(tool.apkUrl))
+            .setTitle("Downloading ${tool.name}")
+            .setDescription("APK file")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+            .setAllowedOverMetered(true)
+            .setAllowedOverRoaming(true)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            request.setRequiresCharging(false)
         }
+
+        val manager = requireContext().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val downloadId = manager.enqueue(request)
+        downloadIds[downloadId] = tool
+        Toast.makeText(requireContext(), "Download started...", Toast.LENGTH_SHORT).show()
     }
 
     private fun installApk(file: File) {
@@ -114,13 +124,10 @@ class HomeFragment : Fragment() {
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (!context.packageManager.canRequestPackageInstalls()) {
-                Toast.makeText(context, "Please allow install from unknown sources", Toast.LENGTH_LONG).show()
-                val settingsIntent = android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES.let { action ->
-                    Intent(action).apply {
-                        data = Uri.parse("package:" + context.packageName)
-                    }
-                }
-                startActivity(settingsIntent)
+                Toast.makeText(context, "Allow install from unknown sources", Toast.LENGTH_LONG).show()
+                startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:" + context.packageName)
+                })
                 return
             }
         }

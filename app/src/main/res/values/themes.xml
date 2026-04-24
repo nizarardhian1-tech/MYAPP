@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.AndroidTools" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your app theme here -->
+    </style>
+</resources>

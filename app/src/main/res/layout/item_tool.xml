@@ -60,7 +60,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Row 2: Description + Version -->
+        <!-- Row 2: Full Description (NOW EXPANDABLE) -->
         <TextView
             android:id="@+id/tvDesc"
             android:layout_width="match_parent"
@@ -69,8 +69,7 @@
             android:textSize="13sp"
             android:textColor="#A0AEC0"
             android:layout_marginTop="8dp"
-            android:maxLines="3"
-            android:ellipsize="end" />
+            android:visibility="visible" />
 
         <LinearLayout
             android:layout_width="match_parent"

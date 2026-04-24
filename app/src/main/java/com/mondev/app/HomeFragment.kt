@@ -30,7 +30,6 @@ class HomeFragment : Fragment() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
             if (id != -1L && downloadIds.containsKey(id)) {
-                // Download selesai, refresh daftar
                 refreshAdapter()
             }
         }
@@ -95,18 +94,19 @@ class HomeFragment : Fragment() {
     }
 
     private fun startDownload(tool: ToolItem) {
-        val fileName = "${tool.name}.apk"
+        val fileName = "${tool.name.replace(" ", "_")}.apk"
+        val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
+
+        // Hapus file lama jika ada
+        if (file.exists()) file.delete()
+
         val request = DownloadManager.Request(Uri.parse(tool.apkUrl))
             .setTitle("Downloading ${tool.name}")
             .setDescription("APK file")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+            .setDestinationUri(Uri.fromFile(file))
             .setAllowedOverMetered(true)
             .setAllowedOverRoaming(true)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            request.setRequiresCharging(false)
-        }
 
         val manager = requireContext().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val downloadId = manager.enqueue(request)
@@ -115,6 +115,10 @@ class HomeFragment : Fragment() {
     }
 
     private fun installApk(file: File) {
+        if (!file.exists()) {
+            Toast.makeText(requireContext(), "File not found. Please download again.", Toast.LENGTH_SHORT).show()
+            return
+        }
         val context = requireContext()
         val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW).apply {

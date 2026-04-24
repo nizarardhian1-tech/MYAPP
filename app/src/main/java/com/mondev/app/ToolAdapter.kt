@@ -54,8 +54,8 @@ class ToolAdapter(
             }
 
             val isInstalled = isPackageInstalled(ctx, tool.packageName)
-            val fileName = "${tool.name}.apk"
-            val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+            val fileName = "${tool.name.replace(" ", "_")}.apk"
+            val file = File(ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
 
             when {
                 isInstalled -> {

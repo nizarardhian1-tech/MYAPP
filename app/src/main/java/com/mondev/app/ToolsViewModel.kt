@@ -1,20 +1,20 @@
 package com.mondev.app
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class ToolsViewModel : ViewModel() {
-    private val _tools = MutableLiveData<List<ToolItem>>()
-    val tools: LiveData<List<ToolItem>> = _tools
+    private val _tools = MutableStateFlow<List<ToolItem>>(emptyList())
+    val tools: StateFlow<List<ToolItem>> = _tools
 
-    private val _isLoading = MutableLiveData(false)
-    val isLoading: LiveData<Boolean> = _isLoading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _error = MutableLiveData<String?>()
-    val error: LiveData<String?> = _error
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
 
     fun fetchTools(url: String = "https://raw.githubusercontent.com/Moniop12/android-c-Compiler/refs/heads/main/tools.json") {
         viewModelScope.launch {

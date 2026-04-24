@@ -40,7 +40,7 @@ class ToolAdapter(private val onInstallClick: ((ToolItem) -> Unit)?) :
             if (onInstallClick != null) {
                 btnAction.visibility = View.VISIBLE
                 btnAction.text = "Install"
-                btnAction.setOnClickListener { onInstallClick(tool) }
+                btnAction.setOnClickListener { onInstallClick?.invoke(tool) }
             } else {
                 btnAction.visibility = View.GONE
             }

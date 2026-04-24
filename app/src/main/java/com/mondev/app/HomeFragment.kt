@@ -7,10 +7,12 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -22,7 +24,6 @@ class HomeFragment : Fragment() {
 
     private val viewModel: ToolsViewModel by activityViewModels()
     private lateinit var adapter: ToolAdapter
-    private val scope = CoroutineScope(Dispatchers.Main)
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,17 +40,20 @@ class HomeFragment : Fragment() {
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = adapter
 
-        viewModel.tools.observe(viewLifecycleOwner, Observer { tools ->
-            adapter.submitList(tools)
-        })
-
-        viewModel.error.observe(viewLifecycleOwner, Observer { error ->
-            error?.let {
-                Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+        lifecycleScope.launch {
+            viewModel.tools.collect { tools ->
+                adapter.submitList(tools)
             }
-        })
+        }
+        lifecycleScope.launch {
+            viewModel.error.collect { error ->
+                error?.let {
+                    Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
 
-        if (viewModel.tools.value.isNullOrEmpty()) {
+        if (viewModel.tools.value.isEmpty()) {
             viewModel.fetchTools()
         }
     }
@@ -60,7 +64,7 @@ class HomeFragment : Fragment() {
             return
         }
 
-        scope.launch {
+        lifecycleScope.launch {
             Toast.makeText(requireContext(), "Downloading ${tool.name}...", Toast.LENGTH_SHORT).show()
             val file = withContext(Dispatchers.IO) {
                 downloadApk(tool.apkUrl, tool.name + ".apk")

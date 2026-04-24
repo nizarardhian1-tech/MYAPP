@@ -6,9 +6,10 @@ import android.view.*
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.launch
 
 class DashboardFragment : Fragment() {
 
@@ -29,19 +30,21 @@ class DashboardFragment : Fragment() {
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = adapter
 
-        viewModel.tools.observe(viewLifecycleOwner, Observer { tools ->
-            val installed = tools.filter { isPackageInstalled(it.packageName) }
-            if (installed.isEmpty()) {
-                rv.visibility = View.GONE
-                tvEmpty.visibility = View.VISIBLE
-            } else {
-                rv.visibility = View.VISIBLE
-                tvEmpty.visibility = View.GONE
-                adapter.submitList(installed)
+        lifecycleScope.launch {
+            viewModel.tools.collect { tools ->
+                val installed = tools.filter { isPackageInstalled(it.packageName) }
+                if (installed.isEmpty()) {
+                    rv.visibility = View.GONE
+                    tvEmpty.visibility = View.VISIBLE
+                } else {
+                    rv.visibility = View.VISIBLE
+                    tvEmpty.visibility = View.GONE
+                    adapter.submitList(installed)
+                }
             }
-        })
+        }
 
-        if (viewModel.tools.value.isNullOrEmpty()) {
+        if (viewModel.tools.value.isEmpty()) {
             viewModel.fetchTools()
         }
     }

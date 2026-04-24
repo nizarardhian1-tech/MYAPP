@@ -1,8 +1,8 @@
 package com.mondev.app
 
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Environment
-import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -44,8 +44,16 @@ class ToolAdapter(
                 ivIcon.setImageResource(R.drawable.ic_launcher_foreground)
             }
 
-            val context = itemView.context
-            val isInstalled = isPackageInstalled(context, tool.packageName)
+            val ctx = itemView.context
+
+            if (tool.apkUrl.isBlank()) {
+                btnAction.text = "Coming Soon"
+                btnAction.isEnabled = false
+                btnAction.alpha = 0.5f
+                return
+            }
+
+            val isInstalled = isPackageInstalled(ctx, tool.packageName)
             val fileName = "${tool.name}.apk"
             val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
 

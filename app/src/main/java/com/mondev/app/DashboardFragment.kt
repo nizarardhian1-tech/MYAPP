@@ -6,6 +6,7 @@ import android.view.*
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -24,11 +25,11 @@ class DashboardFragment : Fragment() {
         val rv = view.findViewById<RecyclerView>(R.id.rvInstalled)
         val tvEmpty = view.findViewById<TextView>(R.id.tvEmpty)
 
-        val adapter = ToolAdapter(null) // no action needed
+        val adapter = ToolAdapter(null)
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = adapter
 
-        viewModel.tools.observe(viewLifecycleOwner) { tools ->
+        viewModel.tools.observe(viewLifecycleOwner, Observer { tools ->
             val installed = tools.filter { isPackageInstalled(it.packageName) }
             if (installed.isEmpty()) {
                 rv.visibility = View.GONE
@@ -38,9 +39,9 @@ class DashboardFragment : Fragment() {
                 tvEmpty.visibility = View.GONE
                 adapter.submitList(installed)
             }
-        }
+        })
 
-        if (viewModel.tools.value.isEmpty()) {
+        if (viewModel.tools.value.isNullOrEmpty()) {
             viewModel.fetchTools()
         }
     }

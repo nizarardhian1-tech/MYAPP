@@ -79,16 +79,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingLeft="8dp"
-        android:paddingRight="8dp"
+                android:paddingRight="8dp"
                 android:paddingTop="3dp"
-        android:paddingBottom="3dp"
+                android:paddingBottom="3dp"
                 android:textSize="10sp"
                 android:textColor="@color/accent"
                 android:background="@drawable/bg_category_badge"
                 android:maxLines="1" />
         </LinearLayout>
 
-        <!-- Full Description -->
+        <!-- Full Description — SEKARANG BISA 10 BARIS -->
         <TextView
             android:id="@+id/tvDesc"
             android:layout_width="match_parent"
@@ -96,7 +96,7 @@
             android:textSize="13sp"
             android:textColor="#A0AEC0"
             android:layout_marginTop="10dp"
-            android:maxLines="3"
+            android:maxLines="10"
             android:ellipsize="end" />
 
         <!-- Tags row -->
@@ -164,7 +164,7 @@
                 android:layout_height="36dp"
                 android:gravity="center"
                 android:paddingLeft="20dp"
-        android:paddingRight="20dp"
+                android:paddingRight="20dp"
                 android:text="Download"
                 android:textColor="@color/on_primary"
                 android:textSize="13sp"

@@ -12,7 +12,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="16dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
         android:paddingTop="16dp"
         android:paddingBottom="8dp">
 
@@ -38,7 +39,8 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="16dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
         android:paddingBottom="10dp">
 
         <EditText
@@ -49,8 +51,10 @@
             android:hint="Search tools…"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="0dp"
+            android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+            android:paddingTop="0dp"
+        android:paddingBottom="0dp"
             android:inputType="text"
             android:imeOptions="actionSearch"
             android:singleLine="true" />
@@ -61,7 +65,8 @@
         android:id="@+id/rvCategories"
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:paddingHorizontal="12dp"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
         android:clipToPadding="false"
         android:scrollbars="none"
         android:layout_marginBottom="6dp" />

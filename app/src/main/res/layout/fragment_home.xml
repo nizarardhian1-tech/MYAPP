@@ -47,7 +47,6 @@
             android:layout_height="44dp"
             android:background="@drawable/bg_search"
             android:hint="Search tools…"
-            android:hintTextColor="@color/text_hint"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:paddingHorizontal="16dp"

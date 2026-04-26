@@ -32,7 +32,6 @@ class HomeFragment : Fragment() {
     private val downloadIds = mutableMapOf<Long, ToolItem>()
     private lateinit var downloadManager: DownloadManager
 
-    // Track progress with a polling approach for DownloadManager
     private val progressHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val progressRunnable = object : Runnable {
         override fun run() {
@@ -60,15 +59,18 @@ class HomeFragment : Fragment() {
         )
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_home, container, false)
-    }
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? = inflater.inflate(R.layout.fragment_home, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Search
+        // Search bar
         val etSearch = view.findViewById<EditText>(R.id.etSearch)
+        // Set hint color programmatically (avoid AAPT hintTextColor issue)
+        etSearch.setHintTextColor(resources.getColor(R.color.text_hint, requireContext().theme))
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -79,10 +81,9 @@ class HomeFragment : Fragment() {
 
         // Category chips
         val rvCategories = view.findViewById<RecyclerView>(R.id.rvCategories)
-        categoryAdapter = CategoryAdapter { cat ->
-            viewModel.setCategory(cat)
-        }
-        rvCategories.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        categoryAdapter = CategoryAdapter { cat -> viewModel.setCategory(cat) }
+        rvCategories.layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         rvCategories.adapter = categoryAdapter
 
         // Tools list
@@ -90,21 +91,20 @@ class HomeFragment : Fragment() {
         toolAdapter = ToolAdapter(
             onDownload  = { tool -> startDownload(tool) },
             onInstall   = { file, tool -> installApk(file) },
-            onCardClick = { tool -> showToolDetail(tool) }
+            onCardClick = { tool -> showChangelog(tool) }
         )
         rvTools.layoutManager = LinearLayoutManager(requireContext())
         rvTools.adapter = toolAdapter
 
-        // Pull to refresh
+        // Swipe refresh
         val swipeRefresh = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
         swipeRefresh.setColorSchemeResources(R.color.primary)
         swipeRefresh.setProgressBackgroundColorSchemeResource(R.color.bg_card)
         swipeRefresh.setOnRefreshListener { viewModel.refresh() }
 
-        // Empty state
         val tvEmpty = view.findViewById<TextView>(R.id.tvEmpty)
 
-        // Observe
+        // Observers
         lifecycleScope.launch {
             viewModel.tools.collect { tools ->
                 toolAdapter.submitList(tools)
@@ -173,15 +173,12 @@ class HomeFragment : Fragment() {
 
     private fun updateAllProgress() {
         downloadIds.forEach { (id, tool) ->
-            val query = DownloadManager.Query().setFilterById(id)
+            val query  = DownloadManager.Query().setFilterById(id)
             val cursor = downloadManager.query(query)
             if (cursor.moveToFirst()) {
                 val total    = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
                 val received = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                if (total > 0) {
-                    val pct = (received * 100 / total).toInt()
-                    toolAdapter.setProgress(tool.packageName, pct)
-                }
+                if (total > 0) toolAdapter.setProgress(tool.packageName, (received * 100 / total).toInt())
             }
             cursor.close()
         }
@@ -211,9 +208,7 @@ class HomeFragment : Fragment() {
         startActivity(intent)
     }
 
-    private fun showToolDetail(tool: ToolItem) {
-        // Optional: launch ToolDetailFragment / BottomSheet
-        // For now, just show a toast with changelog
+    private fun showChangelog(tool: ToolItem) {
         if (tool.changelog.isNotBlank()) {
             Toast.makeText(requireContext(), "What's new: ${tool.changelog}", Toast.LENGTH_LONG).show()
         }

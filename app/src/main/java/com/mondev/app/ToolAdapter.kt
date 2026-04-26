@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.material.button.MaterialButton
 import java.io.File
 
 class ToolAdapter(
@@ -20,7 +21,6 @@ class ToolAdapter(
     private val onCardClick: ((ToolItem) -> Unit)? = null
 ) : ListAdapter<ToolItem, ToolAdapter.ViewHolder>(DiffCallback()) {
 
-    // Map packageName -> download progress 0-100 (-1 = not downloading)
     private val progressMap = mutableMapOf<String, Int>()
 
     fun setProgress(packageName: String, progress: Int) {
@@ -36,28 +36,30 @@ class ToolAdapter(
     }
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val ivIcon:       ImageView   = view.findViewById(R.id.ivIcon)
-        val tvName:       TextView    = view.findViewById(R.id.tvName)
-        val tvDeveloper:  TextView    = view.findViewById(R.id.tvDeveloper)
-        val tvShortDesc:  TextView    = view.findViewById(R.id.tvShortDesc)
-        val tvDesc:       TextView    = view.findViewById(R.id.tvDesc)
-        val tvVersion:    TextView    = view.findViewById(R.id.tvVersion)
-        val tvSize:       TextView    = view.findViewById(R.id.tvSize)
-        val tvCategory:   TextView    = view.findViewById(R.id.tvCategory)
+        val ivIcon: ImageView = view.findViewById(R.id.ivIcon)
+        val tvName: TextView = view.findViewById(R.id.tvName)
+        val tvDeveloper: TextView = view.findViewById(R.id.tvDeveloper)
+        val tvShortDesc: TextView = view.findViewById(R.id.tvShortDesc)
+        val tvDesc: TextView = view.findViewById(R.id.tvDesc)
+        val tvMore: TextView = view.findViewById(R.id.tvMore)
+        val tvVersion: TextView = view.findViewById(R.id.tvVersion)
+        val tvSize: TextView = view.findViewById(R.id.tvSize)
+        val tvCategory: TextView = view.findViewById(R.id.tvCategory)
         val tagContainer: LinearLayout = view.findViewById(R.id.tagContainer)
-        val btnAction:    TextView    = view.findViewById(R.id.btnAction)
-        val progressBar:  ProgressBar = view.findViewById(R.id.downloadProgress)
+        val btnAction: MaterialButton = view.findViewById(R.id.btnAction)
+        val progressBar: ProgressBar = view.findViewById(R.id.downloadProgress)
+
+        private var expanded = false
 
         fun bind(tool: ToolItem) {
-            tvName.text      = tool.name
+            tvName.text = tool.name
             tvDeveloper.text = tool.developer.ifBlank { "Unknown" }
             tvShortDesc.text = tool.shortDesc
-            tvDesc.text      = HtmlCompat.fromHtml(tool.desc, HtmlCompat.FROM_HTML_MODE_LEGACY)
-            tvVersion.text   = "v${tool.version}"
-            tvSize.text      = if (tool.size.isNotBlank()) tool.size else ""
-            tvCategory.text  = tool.category
-
+            tvDesc.text = HtmlCompat.fromHtml(tool.desc, HtmlCompat.FROM_HTML_MODE_LEGACY)
+            tvVersion.text = "v${tool.version}"
+            tvSize.text = if (tool.size.isNotBlank()) tool.size else ""
             tvSize.visibility = if (tool.size.isNotBlank()) View.VISIBLE else View.GONE
+            tvCategory.text = tool.category
 
             // Tags
             tagContainer.removeAllViews()
@@ -80,51 +82,75 @@ class ToolAdapter(
                 ivIcon.setImageResource(R.drawable.ic_launcher_foreground)
             }
 
+            // Expand logic
+            tvDesc.post {
+                if (tvDesc.lineCount > 3) {
+                    tvMore.visibility = View.VISIBLE
+                    tvMore.setOnClickListener {
+                        expanded = !expanded
+                        if (expanded) {
+                            tvDesc.maxLines = Int.MAX_VALUE
+                            tvMore.text = "\u25b2 Show less"
+                        } else {
+                            tvDesc.maxLines = 3
+                            tvMore.text = "\u25bc Show more"
+                        }
+                    }
+                } else {
+                    tvMore.visibility = View.GONE
+                }
+            }
+
             // Card click
             itemView.setOnClickListener { onCardClick?.invoke(tool) }
 
-            // Progress state
+            // Progress
             val progress = progressMap[tool.packageName] ?: -1
             if (progress in 0..99) {
                 progressBar.visibility = View.VISIBLE
-                progressBar.progress   = progress
-                btnAction.text         = "$progress%"
-                btnAction.isEnabled    = false
-                btnAction.alpha        = 0.6f
+                progressBar.progress = progress
+                btnAction.text = "$progress%"
+                btnAction.isEnabled = false
                 return
             } else {
                 progressBar.visibility = View.GONE
             }
 
-            // Coming soon
             if (tool.apkUrl.isBlank()) {
-                btnAction.text      = "Coming Soon"
+                btnAction.text = "Coming Soon"
                 btnAction.isEnabled = false
-                btnAction.alpha     = 0.4f
                 return
             }
 
-            val ctx        = itemView.context
+            val ctx = itemView.context
             val isInstalled = isPackageInstalled(ctx, tool.packageName)
-            val fileName   = "${tool.name.replace(" ", "_")}.apk"
-            val file       = File(ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
+            val fileName = "${tool.name.replace(" ", "_")}.apk"
+            val file = File(ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
 
             when {
+                tool.forceUpdate -> {
+                    btnAction.text = "Update"
+                    btnAction.isEnabled = true
+                    btnAction.setOnClickListener { onDownload?.invoke(tool) }
+                }
                 isInstalled -> {
-                    btnAction.text      = "✓ Installed"
+                    btnAction.text = "\u2713 Installed"
                     btnAction.isEnabled = false
-                    btnAction.alpha     = 0.5f
                 }
                 file.exists() -> {
-                    btnAction.text      = "Install"
-                    btnAction.isEnabled = true
-                    btnAction.alpha     = 1.0f
-                    btnAction.setOnClickListener { onInstall?.invoke(file, tool) }
+                    if (tool.type == "apk") {
+                        btnAction.text = "Install"
+                        btnAction.isEnabled = true
+                        btnAction.setOnClickListener { onInstall?.invoke(file, tool) }
+                    } else {
+                        btnAction.text = "Open"
+                        btnAction.isEnabled = true
+                        btnAction.setOnClickListener { /* Buka file dengan editor */ }
+                    }
                 }
                 else -> {
-                    btnAction.text      = "Download"
+                    btnAction.text = "Download"
                     btnAction.isEnabled = true
-                    btnAction.alpha     = 1.0f
                     btnAction.setOnClickListener { onDownload?.invoke(tool) }
                 }
             }

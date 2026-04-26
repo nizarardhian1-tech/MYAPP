@@ -26,14 +26,12 @@ object ToolsRepository {
         for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
 
-            // Parse tags array
             val tagsJson = obj.optJSONArray("tags")
             val tags = mutableListOf<String>()
             if (tagsJson != null) {
                 for (t in 0 until tagsJson.length()) tags.add(tagsJson.getString(t))
             }
 
-            // Parse screenshots array
             val ssJson = obj.optJSONArray("screenshots")
             val screenshots = mutableListOf<String>()
             if (ssJson != null) {
@@ -54,7 +52,9 @@ object ToolsRepository {
                     size        = obj.optString("size", ""),
                     changelog   = obj.optString("changelog", ""),
                     tags        = tags,
-                    screenshots = screenshots
+                    screenshots = screenshots,
+                    forceUpdate = obj.optBoolean("force_update", false),
+                    type        = obj.optString("type", "apk")
                 )
             )
         }

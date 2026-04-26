@@ -1,10 +1,4 @@
-# ProGuard rules untuk com.mondev.app
-
-# Keep all classes in this package
--keep class com.mondev.app.** { *; }
-
 # Kotlin
--keep class kotlin.** { *; }
 -keep class kotlin.Metadata { *; }
 -dontwarn kotlin.**
 -keepclassmembers class **$WhenMappings { <fields>; }
@@ -16,27 +10,6 @@
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
 -dontwarn kotlinx.coroutines.**
-
-# Retrofit
--keepattributes Signature
--keepattributes Exceptions
--keep class retrofit2.** { *; }
--keepattributes RuntimeVisibleAnnotations
--keepattributes RuntimeInvisibleAnnotations
--dontwarn retrofit2.**
-
-# Gson
--keep class com.google.gson.** { *; }
--keepattributes *Annotation*
--keep class * implements com.google.gson.TypeAdapterFactory
--keep class * implements com.google.gson.JsonSerializer
--keep class * implements com.google.gson.JsonDeserializer
-
-# Room
--keep class * extends androidx.room.RoomDatabase
--keep @androidx.room.Entity class *
--keep @androidx.room.Dao interface *
--dontwarn androidx.room.**
 
 # Glide
 -keep public class * implements com.bumptech.glide.module.GlideModule

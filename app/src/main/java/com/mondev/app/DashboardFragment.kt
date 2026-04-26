@@ -23,9 +23,9 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val rvInstalled    = view.findViewById<RecyclerView>(R.id.rvInstalled)
-        val tvEmpty        = view.findViewById<TextView>(R.id.tvEmpty)
-        val tvUpdateBadge  = view.findViewById<TextView>(R.id.tvUpdateBadge)
+        val rvInstalled      = view.findViewById<RecyclerView>(R.id.rvInstalled)
+        val tvEmpty          = view.findViewById<TextView>(R.id.tvEmpty)
+        val tvUpdateBadge    = view.findViewById<TextView>(R.id.tvUpdateBadge)
         val tvInstalledCount = view.findViewById<TextView>(R.id.tvInstalledCount)
 
         val adapter = ToolAdapter()
@@ -68,6 +68,7 @@ class DashboardFragment : Fragment() {
 
     private fun hasUpdate(tool: ToolItem): Boolean {
         if (tool.packageName.isEmpty()) return false
+        if (tool.forceUpdate) return true
         return try {
             val info = requireContext().packageManager.getPackageInfo(tool.packageName, 0)
             info.versionName != tool.version

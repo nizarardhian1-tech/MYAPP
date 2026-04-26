@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>&#128230; Universal JSON Generator — mondev</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f5f7fa; font-family: 'Segoe UI', sans-serif; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); margin-bottom: 20px; }
+    .card-header { background: white; border-bottom: 1px solid #edf2f7; font-weight: 600; font-size: 1.1rem; padding: 16px 20px; border-radius: 16px 16px 0 0 !important; }
+    .remove-btn { cursor: pointer; opacity: 0.7; transition: 0.2s; }
+    .remove-btn:hover { opacity: 1; }
+    textarea.json-output { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85rem; height: 320px; background: #1e293b; color: #e2e8f0; border: none; border-radius: 12px; }
+    .preset-box { background: white; border-radius: 12px; padding: 16px; }
+    .btn-primary { background: #10b981; border: none; }
+    .btn-primary:hover { background: #059669; }
+    .btn-outline-primary { border-color: #10b981; color: #10b981; }
+    .btn-outline-primary:hover { background: #10b981; color: white; }
+    .form-label { font-weight: 500; font-size: 0.85rem; color: #475569; margin-bottom: 4px; }
+    .form-control, .form-select { border-radius: 10px; border: 1px solid #e2e8f0; padding: 10px 14px; }
+    .form-control:focus, .form-select:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+    .app-entry { animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    hr { opacity: 0.5; }
+  </style>
+</head>
+<body class="container py-4">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">&#128736;&#65039; Universal JSON Generator</h2>
+    <p class="text-muted">Untuk AndroidTools — mondev</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">&#9881;&#65039; Preset URL (opsional)</div>
+    <div class="card-body preset-box">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Base URL untuk Ikon</label>
+          <input type="text" class="form-control" id="presetIconBase"
+                 placeholder="https://raw.githubusercontent.com/.../icons/"
+                 onchange="saveAllData()">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Base URL untuk APK/Script</label>
+          <input type="text" class="form-control" id="presetApkBase"
+                 placeholder="https://github.com/.../releases/download/"
+                 onchange="saveAllData()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="apps-container"></div>
+
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <button class="btn btn-success" onclick="addApp()">&#10133; Tambah Item</button>
+    <button class="btn btn-primary" onclick="generateJSON()">&#128203; Generate JSON</button>
+    <button class="btn btn-outline-primary" onclick="copyToClipboard()">&#128206; Salin JSON</button>
+    <button class="btn btn-outline-secondary" onclick="exportJSON()">&#128190; Ekspor File</button>
+  </div>
+
+  <div class="card">
+    <div class="card-header">&#128196; Output JSON</div>
+    <div class="card-body">
+      <textarea id="json-output" class="form-control json-output" readonly placeholder="Klik 'Generate JSON'..."></textarea>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'mondev_json_gen_v2';
+
+    function getDefaultApps() {
+      return [{
+        name: "DroidForge", short_desc: "Android project generator",
+        desc: "DroidForge — Android Project Scaffolder",
+        version: "1.0", package_name: "com.androidgen.app",
+        apk_url: "", icon_url: "",
+        category: "Tools", developer: "mondev", size: "", changelog: "",
+        tags: ["dev"], screenshots: [], force_update: false, type: "apk"
+      }];
+    }
+
+    function saveAllData() {
+      const apps = collectAppsData();
+      const presets = {
+        iconBase: document.getElementById('presetIconBase').value.trim(),
+        apkBase: document.getElementById('presetApkBase').value.trim()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ apps, presets }));
+    }
+
+    function loadAllData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.presets) {
+            document.getElementById('presetIconBase').value = data.presets.iconBase || '';
+            document.getElementById('presetApkBase').value = data.presets.apkBase || '';
+          }
+          if (data.apps && data.apps.length > 0) {
+            renderApps(data.apps);
+            return;
+          }
+        } catch (e) {}
+      }
+      renderApps(getDefaultApps());
+    }
+
+    function renderApps(apps) {
+      const container = document.getElementById('apps-container');
+      container.innerHTML = '';
+      apps.forEach((app, i) => container.insertAdjacentHTML('beforeend', createAppForm(i, app)));
+    }
+
+    function createAppForm(index, app = {}) {
+      return `
+        <div class="card app-entry" data-index="${index}">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>&#128230; ${esc(app.name || 'Item Baru #' + (index + 1))}</span>
+            <span class="remove-btn text-danger" onclick="removeApp(this)" title="Hapus">&#10005;</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Nama <span class="text-danger">*</span></label>
+                <input type="text" class="form-control app-name" value="${esc(app.name || '')}" onchange="saveAllData()">
+                <label class="form-label mt-2">Deskripsi Singkat</label>
+                <input type="text" class="form-control app-short_desc" value="${esc(app.short_desc || '')}" onchange="saveAllData()">
+                <label class="form-label mt-2">Deskripsi Panjang</label>
+                <textarea class="form-control app-desc" rows="3" onchange="saveAllData()">${esc(app.desc || '')}</textarea>
+                <label class="form-label mt-2">Versi</label>
+                <input type="text" class="form-control app-version" value="${esc(app.version || '')}" onchange="saveAllData()">
+                <label class="form-label mt-2">Package Name</label>
+                <input type="text" class="form-control app-package" value="${esc(app.package_name || '')}" onchange="saveAllData()">
+                <label class="form-label mt-2">Tipe</label>
+                <select class="form-select app-type" onchange="saveAllData()">
+                  <option value="apk" ${(app.type || 'apk') === 'apk' ? 'selected' : ''}>APK</option>
+                  <option value="script" ${app.type === 'script' ? 'selected' : ''}>Script</option>
+                  <option value="binary" ${app.type === 'binary' ? 'selected' : ''}>Binary</option>
+                </select>
+                <div class="form-check mt-2">
+                  <input class="form-check-input app-force_update" type="checkbox" id="forceUpdate${index}" ${app.force_update ? 'checked' : ''} onchange="saveAllData()">
+                  <label class="form-check-label" for="forceUpdate${index}">Force Update</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Kategori</label>
+                <input type="text" class="form-control app-category" value="${esc(app.category || '')}" onchange="saveAllData()">
+                <label class="form-label mt-2">Developer</label>
+                <input type="text" class="form-control app-developer" value="${esc(app.developer || 'mondev')}" onchange="saveAllData()">
+                <label class="form-label mt-2">Ukuran</label>
+                <input type="text" class="form-control app-size" value="${esc(app.size || '')}" onchange="saveAllData()">
+                <label class="form-label mt-2">Changelog</label>
+                <input type="text" class="form-control app-changelog" value="${esc(app.changelog || '')}" onchange="saveAllData()">
+                <label class="form-label mt-2">APK / File URL</label>
+                <input type="text" class="form-control app-apk_url" value="${esc(app.apk_url || '')}" onchange="saveAllData()">
+                <label class="form-label mt-2">Icon URL</label>
+                <input type="text" class="form-control app-icon_url" value="${esc(app.icon_url || '')}" onchange="saveAllData()">
+                <label class="form-label mt-2">Tags (pisah koma)</label>
+                <input type="text" class="form-control app-tags" value="${esc((app.tags || []).join(', '))}" onchange="saveAllData()">
+                <label class="form-label mt-2">Screenshots (URL per baris)</label>
+                <textarea class="form-control app-screenshots" rows="2" onchange="saveAllData()">${esc((app.screenshots || []).join('\n'))}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+    }
+
+    function addApp() {
+      const container = document.getElementById('apps-container');
+      const index = container.children.length;
+      container.insertAdjacentHTML('beforeend', createAppForm(index));
+      saveAllData();
+    }
+
+    function removeApp(btn) {
+      btn.closest('.card').remove();
+      saveAllData();
+    }
+
+    function collectAppsData() {
+      const entries = document.querySelectorAll('.app-entry');
+      const apps = [];
+      const iconBase = document.getElementById('presetIconBase').value.trim();
+      const apkBase  = document.getElementById('presetApkBase').value.trim();
+      entries.forEach(entry => {
+        const name = entry.querySelector('.app-name')?.value.trim() || '';
+        let icon = entry.querySelector('.app-icon_url')?.value.trim() || '';
+        if (iconBase && icon && !icon.startsWith('http')) icon = iconBase + icon;
+        let apk = entry.querySelector('.app-apk_url')?.value.trim() || '';
+        if (apkBase && apk && !apk.startsWith('http')) apk = apkBase + apk;
+        apps.push({
+          name,
+          short_desc:   entry.querySelector('.app-short_desc')?.value.trim() || '',
+          desc:         entry.querySelector('.app-desc')?.value.trim() || '',
+          version:      entry.querySelector('.app-version')?.value.trim() || '',
+          package_name: entry.querySelector('.app-package')?.value.trim() || '',
+          apk_url:      apk,
+          icon_url:     icon,
+          category:     entry.querySelector('.app-category')?.value.trim() || '',
+          developer:    entry.querySelector('.app-developer')?.value.trim() || 'mondev',
+          size:         entry.querySelector('.app-size')?.value.trim() || '',
+          changelog:    entry.querySelector('.app-changelog')?.value.trim() || '',
+          tags:         (entry.querySelector('.app-tags')?.value || '').split(',').map(t => t.trim()).filter(t => t),
+          screenshots:  (entry.querySelector('.app-screenshots')?.value || '').split('\n').map(s => s.trim()).filter(s => s),
+          force_update: entry.querySelector('.app-force_update')?.checked || false,
+          type:         entry.querySelector('.app-type')?.value || 'apk'
+        });
+      });
+      return apps;
+    }
+
+    function generateJSON() {
+      const apps = collectAppsData();
+      for (let a of apps) {
+        if (!a.name.trim()) { alert('Nama aplikasi wajib diisi!'); return; }
+      }
+      document.getElementById('json-output').value = JSON.stringify(apps, null, 2);
+      saveAllData();
+    }
+
+    function copyToClipboard() {
+      const ta = document.getElementById('json-output');
+      if (!ta.value) { alert('Generate dulu!'); return; }
+      navigator.clipboard.writeText(ta.value).then(() => alert('Tersalin!'));
+    }
+
+    function exportJSON() {
+      const ta = document.getElementById('json-output');
+      if (!ta.value) { alert('Generate dulu!'); return; }
+      const blob = new Blob([ta.value], {type: 'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tools.json';
+      a.click();
+    }
+
+    window.addEventListener('DOMContentLoaded', loadAllData);
+    setInterval(saveAllData, 3000);
+  </script>
+</body>
+</html>

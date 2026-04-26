@@ -31,8 +31,9 @@ class HomeFragment : Fragment() {
 
     private val downloadIds = mutableMapOf<Long, ToolItem>()
     private lateinit var downloadManager: DownloadManager
+    private lateinit var progressHandler: android.os.Handler
+    private var pendingInstallFile: File? = null
 
-    private val progressHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val progressRunnable = object : Runnable {
         override fun run() {
             updateAllProgress()
@@ -67,9 +68,10 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        progressHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
         // Search bar
         val etSearch = view.findViewById<EditText>(R.id.etSearch)
-        // Set hint color programmatically (avoid AAPT hintTextColor issue)
         etSearch.setHintTextColor(resources.getColor(R.color.text_hint, requireContext().theme))
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -137,12 +139,25 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        // Coba instal jika ada pending dan izin sudah diberikan
+        pendingInstallFile?.let { file ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                requireContext().packageManager.canRequestPackageInstalls()) {
+                installApk(file)
+                pendingInstallFile = null
+            }
+        }
         toolAdapter.notifyDataSetChanged()
         if (downloadIds.isNotEmpty()) progressHandler.post(progressRunnable)
     }
 
     override fun onPause() {
         super.onPause()
+        progressHandler.removeCallbacks(progressRunnable)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
         progressHandler.removeCallbacks(progressRunnable)
     }
 
@@ -168,7 +183,7 @@ class HomeFragment : Fragment() {
         downloadIds[downloadId] = tool
         toolAdapter.setProgress(tool.packageName, 0)
         progressHandler.post(progressRunnable)
-        Toast.makeText(requireContext(), "Downloading ${tool.name}…", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), "Downloading ${tool.name}\u2026", Toast.LENGTH_SHORT).show()
     }
 
     private fun updateAllProgress() {
@@ -186,26 +201,26 @@ class HomeFragment : Fragment() {
 
     private fun installApk(file: File) {
         if (!file.exists()) {
-            Toast.makeText(requireContext(), "File not found. Please download again.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "File not found.", Toast.LENGTH_SHORT).show()
             return
         }
         val ctx = requireContext()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            !ctx.packageManager.canRequestPackageInstalls()) {
+            pendingInstallFile = file
+            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                data = Uri.parse("package:${ctx.packageName}")
+            })
+            return
+        }
         val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            !ctx.packageManager.canRequestPackageInstalls()
-        ) {
-            Toast.makeText(ctx, "Allow install from unknown sources", Toast.LENGTH_LONG).show()
-            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                data = Uri.parse("package:${ctx.packageName}")
-            })
-            return
-        }
         startActivity(intent)
+        pendingInstallFile = null
     }
 
     private fun showChangelog(tool: ToolItem) {

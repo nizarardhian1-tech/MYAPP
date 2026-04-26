@@ -44,7 +44,7 @@ class ProfileFragment : Fragment() {
 
         // GitHub
         view.findViewById<TextView>(R.id.tvGithub)?.setOnClickListener {
-            openLink("https://github.com/Moniop12/android-c-Compiler")
+            openLink("https://github.com/Moniop12/APK.git")
         }
 
         // Refresh JSON

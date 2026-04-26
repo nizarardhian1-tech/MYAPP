@@ -9,7 +9,7 @@ class ToolsViewModel : ViewModel() {
 
     companion object {
         const val JSON_URL =
-            "https://raw.githubusercontent.com/Moniop12/android-c-Compiler/refs/heads/main/tools.json"
+            "https://raw.githubusercontent.com/Moniop12/APK/refs/heads/main/tools.json"
     }
 
     // Raw list from network

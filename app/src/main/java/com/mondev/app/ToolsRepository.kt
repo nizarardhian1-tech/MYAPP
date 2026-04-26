@@ -13,13 +13,11 @@ object ToolsRepository {
         connection.connectTimeout = 8000
         connection.readTimeout = 8000
         connection.requestMethod = "GET"
+        connection.setRequestProperty("Cache-Control", "no-cache")
 
-        val stream = connection.inputStream
-        val jsonString = stream.bufferedReader().use { it.readText() }
-        stream.close()
+        val json = connection.inputStream.bufferedReader().use { it.readText() }
         connection.disconnect()
-
-        parseTools(jsonString)
+        parseTools(json)
     }
 
     private fun parseTools(json: String): List<ToolItem> {
@@ -27,15 +25,38 @@ object ToolsRepository {
         val arr = JSONArray(json)
         for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
-            list.add(ToolItem(
-                name = obj.getString("name"),
-                shortDesc = obj.optString("short_desc", ""),
-                desc = obj.optString("desc", ""),
-                version = obj.optString("version", ""),
-                packageName = obj.optString("package_name", ""),
-                apkUrl = obj.optString("apk_url", ""),
-                iconUrl = obj.optString("icon_url", "")
-            ))
+
+            // Parse tags array
+            val tagsJson = obj.optJSONArray("tags")
+            val tags = mutableListOf<String>()
+            if (tagsJson != null) {
+                for (t in 0 until tagsJson.length()) tags.add(tagsJson.getString(t))
+            }
+
+            // Parse screenshots array
+            val ssJson = obj.optJSONArray("screenshots")
+            val screenshots = mutableListOf<String>()
+            if (ssJson != null) {
+                for (s in 0 until ssJson.length()) screenshots.add(ssJson.getString(s))
+            }
+
+            list.add(
+                ToolItem(
+                    name        = obj.getString("name"),
+                    shortDesc   = obj.optString("short_desc", ""),
+                    desc        = obj.optString("desc", ""),
+                    version     = obj.optString("version", "1.0"),
+                    packageName = obj.optString("package_name", ""),
+                    apkUrl      = obj.optString("apk_url", ""),
+                    iconUrl     = obj.optString("icon_url", ""),
+                    category    = obj.optString("category", "Tools"),
+                    developer   = obj.optString("developer", "Unknown"),
+                    size        = obj.optString("size", ""),
+                    changelog   = obj.optString("changelog", ""),
+                    tags        = tags,
+                    screenshots = screenshots
+                )
+            )
         }
         return list
     }

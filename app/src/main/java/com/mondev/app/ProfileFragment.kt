@@ -10,10 +10,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
 class ProfileFragment : Fragment() {
 
@@ -27,12 +24,33 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // App version
+        val tvAppVersion = view.findViewById<TextView>(R.id.tvAppVersion)
+        try {
+            val info = requireContext().packageManager
+                .getPackageInfo(requireContext().packageName, 0)
+            tvAppVersion.text = "v${info.versionName}"
+        } catch (_: Exception) {}
+
+        // Check updates
         view.findViewById<TextView>(R.id.tvCheckUpdate).setOnClickListener {
             checkForUpdates()
         }
 
+        // Telegram
         view.findViewById<TextView>(R.id.tvTelegram).setOnClickListener {
-            openTelegram()
+            openLink("https://t.me/modfreew")
+        }
+
+        // GitHub
+        view.findViewById<TextView>(R.id.tvGithub)?.setOnClickListener {
+            openLink("https://github.com/Moniop12/android-c-Compiler")
+        }
+
+        // Refresh JSON
+        view.findViewById<TextView>(R.id.tvRefreshData)?.setOnClickListener {
+            viewModel.refresh()
+            Toast.makeText(requireContext(), "Refreshing tool list…", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -40,24 +58,28 @@ class ProfileFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val tools = withContext(Dispatchers.IO) {
-                    ToolsRepository.fetchTools("https://raw.githubusercontent.com/Moniop12/android-c-Compiler/refs/heads/main/tools.json")
+                    ToolsRepository.fetchTools(ToolsViewModel.JSON_URL)
                 }
                 val updates = tools.filter { tool ->
                     if (tool.packageName.isEmpty()) false
                     else {
                         try {
-                            val info = requireContext().packageManager.getPackageInfo(tool.packageName, 0)
+                            val info = requireContext().packageManager
+                                .getPackageInfo(tool.packageName, 0)
                             info.versionName != tool.version
-                        } catch (e: PackageManager.NameNotFoundException) { false }
+                        } catch (_: PackageManager.NameNotFoundException) { false }
                     }
                 }
                 if (updates.isEmpty()) {
-                    Toast.makeText(requireContext(), "All tools up to date", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "✓ All tools up to date", Toast.LENGTH_SHORT).show()
                 } else {
-                    val names = updates.joinToString("\n") { "${it.name} (${it.version})" }
+                    val msg = updates.joinToString("\n") {
+                        "• ${it.name} → v${it.version}" +
+                                if (it.changelog.isNotBlank()) "\n  ${it.changelog}" else ""
+                    }
                     AlertDialog.Builder(requireContext())
-                        .setTitle("Updates Available")
-                        .setMessage(names + "\n\nOpen Home tab to install.")
+                        .setTitle("${updates.size} Update(s) Available")
+                        .setMessage("$msg\n\nGo to Home tab to install.")
                         .setPositiveButton("OK", null)
                         .show()
                 }
@@ -67,12 +89,8 @@ class ProfileFragment : Fragment() {
         }
     }
 
-    private fun openTelegram() {
-        val url = "https://t.me/modfreew"
-        try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-        } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Telegram app not found", Toast.LENGTH_SHORT).show()
-        }
+    private fun openLink(url: String) {
+        try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+        catch (_: Exception) { Toast.makeText(requireContext(), "No browser found", Toast.LENGTH_SHORT).show() }
     }
 }

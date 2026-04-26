@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Network Tools",
+    "short_desc": "Ping, traceroute, port scanner",
+    "desc": "A <b>powerful</b> network diagnostic toolkit for Android. Check your connection, scan ports, and trace routes with ease.",
+    "version": "2.1.0",
+    "package_name": "com.mondev.nettools",
+    "apk_url": "https://raw.githubusercontent.com/YourRepo/releases/nettools.apk",
+    "icon_url": "https://your-cdn.com/icons/nettools.png",
+    "category": "Network",
+    "developer": "mondev",
+    "size": "4.2 MB",
+    "changelog": "Added IPv6 support and dark mode fixes.",
+    "tags": ["network", "ping", "debug"],
+    "screenshots": []
+  },
+  {
+    "name": "File Manager Pro",
+    "short_desc": "Browse, edit, and share files",
+    "desc": "Full-featured file manager with root support, archive extraction, and cloud sync.",
+    "version": "3.0.1",
+    "package_name": "com.mondev.fileman",
+    "apk_url": "https://raw.githubusercontent.com/YourRepo/releases/fileman.apk",
+    "icon_url": "https://your-cdn.com/icons/fileman.png",
+    "category": "Utilities",
+    "developer": "mondev",
+    "size": "7.8 MB",
+    "changelog": "Root explorer stability improvements.",
+    "tags": ["files", "root", "archive"],
+    "screenshots": []
+  },
+  {
+    "name": "C Compiler IDE",
+    "short_desc": "Write and run C/C++ on Android",
+    "desc": "Full offline C/C++ compiler with syntax highlighting, error output, and project management.",
+    "version": "1.5.0",
+    "package_name": "com.mondev.compiler",
+    "apk_url": "https://raw.githubusercontent.com/Moniop12/android-c-Compiler/refs/heads/main/app-release.apk",
+    "icon_url": "https://your-cdn.com/icons/compiler.png",
+    "category": "Developer",
+    "developer": "mondev",
+    "size": "12.1 MB",
+    "changelog": "Fixed crash on ARM64 devices. Added C++ support.",
+    "tags": ["c", "compiler", "ide", "dev"],
+    "screenshots": []
+  },
+  {
+    "name": "Coming Soon App",
+    "short_desc": "Something cool is on the way",
+    "desc": "Stay tuned! This tool is under development.",
+    "version": "0.0.1",
+    "package_name": "com.mondev.soon",
+    "apk_url": "",
+    "icon_url": "",
+    "category": "Utilities",
+    "developer": "mondev",
+    "size": "",
+    "changelog": "",
+    "tags": ["upcoming"],
+    "screenshots": []
+  }
+]

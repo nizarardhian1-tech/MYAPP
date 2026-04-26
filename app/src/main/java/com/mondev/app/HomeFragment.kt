@@ -9,79 +9,141 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.*
-import android.widget.Toast
+import android.widget.*
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import kotlinx.coroutines.launch
 import java.io.File
 
 class HomeFragment : Fragment() {
 
     private val viewModel: ToolsViewModel by activityViewModels()
-    private lateinit var adapter: ToolAdapter
+    private lateinit var toolAdapter: ToolAdapter
+    private lateinit var categoryAdapter: CategoryAdapter
+
     private val downloadIds = mutableMapOf<Long, ToolItem>()
+    private lateinit var downloadManager: DownloadManager
+
+    // Track progress with a polling approach for DownloadManager
+    private val progressHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val progressRunnable = object : Runnable {
+        override fun run() {
+            updateAllProgress()
+            if (downloadIds.isNotEmpty()) progressHandler.postDelayed(this, 800)
+        }
+    }
 
     private val onDownloadComplete = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
-            if (id != -1L && downloadIds.containsKey(id)) {
-                refreshAdapter()
+            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: return
+            downloadIds.remove(id)?.let { tool ->
+                toolAdapter.clearProgress(tool.packageName)
+                toolAdapter.notifyDataSetChanged()
             }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        downloadManager = requireContext().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         requireActivity().registerReceiver(
             onDownloadComplete,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         )
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_home, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val rv = view.findViewById<RecyclerView>(R.id.rvTools)
-        adapter = ToolAdapter(
-            onDownload = { tool -> startDownload(tool) },
-            onInstall = { file -> installApk(file) }
-        )
-        rv.layoutManager = LinearLayoutManager(requireContext())
-        rv.adapter = adapter
+        // Search
+        val etSearch = view.findViewById<EditText>(R.id.etSearch)
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                viewModel.setSearch(s?.toString() ?: "")
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
 
+        // Category chips
+        val rvCategories = view.findViewById<RecyclerView>(R.id.rvCategories)
+        categoryAdapter = CategoryAdapter { cat ->
+            viewModel.setCategory(cat)
+        }
+        rvCategories.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        rvCategories.adapter = categoryAdapter
+
+        // Tools list
+        val rvTools = view.findViewById<RecyclerView>(R.id.rvTools)
+        toolAdapter = ToolAdapter(
+            onDownload  = { tool -> startDownload(tool) },
+            onInstall   = { file, tool -> installApk(file) },
+            onCardClick = { tool -> showToolDetail(tool) }
+        )
+        rvTools.layoutManager = LinearLayoutManager(requireContext())
+        rvTools.adapter = toolAdapter
+
+        // Pull to refresh
+        val swipeRefresh = view.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
+        swipeRefresh.setColorSchemeResources(R.color.primary)
+        swipeRefresh.setProgressBackgroundColorSchemeResource(R.color.bg_card)
+        swipeRefresh.setOnRefreshListener { viewModel.refresh() }
+
+        // Empty state
+        val tvEmpty = view.findViewById<TextView>(R.id.tvEmpty)
+
+        // Observe
         lifecycleScope.launch {
             viewModel.tools.collect { tools ->
-                adapter.submitList(tools)
+                toolAdapter.submitList(tools)
+                tvEmpty.visibility = if (tools.isEmpty()) View.VISIBLE else View.GONE
             }
         }
         lifecycleScope.launch {
-            viewModel.error.collect { error ->
-                error?.let {
-                    Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
-                }
+            viewModel.categories.collect { cats ->
+                categoryAdapter.submitList(cats, viewModel.selectedCategory.value)
+            }
+        }
+        lifecycleScope.launch {
+            viewModel.selectedCategory.collect { cat ->
+                categoryAdapter.submitList(viewModel.categories.value, cat)
+            }
+        }
+        lifecycleScope.launch {
+            viewModel.isLoading.collect { loading ->
+                swipeRefresh.isRefreshing = loading
+            }
+        }
+        lifecycleScope.launch {
+            viewModel.error.collect { err ->
+                err?.let { Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show() }
             }
         }
 
-        if (viewModel.tools.value.isEmpty()) {
-            viewModel.fetchTools()
-        }
+        if (viewModel.allTools.value.isEmpty()) viewModel.fetchTools()
     }
 
     override fun onResume() {
         super.onResume()
-        refreshAdapter()
+        toolAdapter.notifyDataSetChanged()
+        if (downloadIds.isNotEmpty()) progressHandler.post(progressRunnable)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        progressHandler.removeCallbacks(progressRunnable)
     }
 
     override fun onDestroy() {
@@ -89,29 +151,40 @@ class HomeFragment : Fragment() {
         requireActivity().unregisterReceiver(onDownloadComplete)
     }
 
-    private fun refreshAdapter() {
-        adapter.notifyDataSetChanged()
-    }
-
     private fun startDownload(tool: ToolItem) {
         val fileName = "${tool.name.replace(" ", "_")}.apk"
         val file = File(requireContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
-
-        // Hapus file lama jika ada
         if (file.exists()) file.delete()
 
         val request = DownloadManager.Request(Uri.parse(tool.apkUrl))
             .setTitle("Downloading ${tool.name}")
-            .setDescription("APK file")
+            .setDescription("v${tool.version}")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setDestinationUri(Uri.fromFile(file))
             .setAllowedOverMetered(true)
             .setAllowedOverRoaming(true)
 
-        val manager = requireContext().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val downloadId = manager.enqueue(request)
+        val downloadId = downloadManager.enqueue(request)
         downloadIds[downloadId] = tool
-        Toast.makeText(requireContext(), "Download started...", Toast.LENGTH_SHORT).show()
+        toolAdapter.setProgress(tool.packageName, 0)
+        progressHandler.post(progressRunnable)
+        Toast.makeText(requireContext(), "Downloading ${tool.name}…", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateAllProgress() {
+        downloadIds.forEach { (id, tool) ->
+            val query = DownloadManager.Query().setFilterById(id)
+            val cursor = downloadManager.query(query)
+            if (cursor.moveToFirst()) {
+                val total    = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                val received = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+                if (total > 0) {
+                    val pct = (received * 100 / total).toInt()
+                    toolAdapter.setProgress(tool.packageName, pct)
+                }
+            }
+            cursor.close()
+        }
     }
 
     private fun installApk(file: File) {
@@ -119,22 +192,30 @@ class HomeFragment : Fragment() {
             Toast.makeText(requireContext(), "File not found. Please download again.", Toast.LENGTH_SHORT).show()
             return
         }
-        val context = requireContext()
-        val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+        val ctx = requireContext()
+        val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (!context.packageManager.canRequestPackageInstalls()) {
-                Toast.makeText(context, "Allow install from unknown sources", Toast.LENGTH_LONG).show()
-                startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                    data = Uri.parse("package:" + context.packageName)
-                })
-                return
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            !ctx.packageManager.canRequestPackageInstalls()
+        ) {
+            Toast.makeText(ctx, "Allow install from unknown sources", Toast.LENGTH_LONG).show()
+            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                data = Uri.parse("package:${ctx.packageName}")
+            })
+            return
         }
         startActivity(intent)
+    }
+
+    private fun showToolDetail(tool: ToolItem) {
+        // Optional: launch ToolDetailFragment / BottomSheet
+        // For now, just show a toast with changelog
+        if (tool.changelog.isNotBlank()) {
+            Toast.makeText(requireContext(), "What's new: ${tool.changelog}", Toast.LENGTH_LONG).show()
+        }
     }
 }

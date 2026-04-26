@@ -23,39 +23,54 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val rv = view.findViewById<RecyclerView>(R.id.rvInstalled)
-        val tvEmpty = view.findViewById<TextView>(R.id.tvEmpty)
+        val rvInstalled    = view.findViewById<RecyclerView>(R.id.rvInstalled)
+        val tvEmpty        = view.findViewById<TextView>(R.id.tvEmpty)
+        val tvUpdateBadge  = view.findViewById<TextView>(R.id.tvUpdateBadge)
+        val tvInstalledCount = view.findViewById<TextView>(R.id.tvInstalledCount)
 
-        val adapter = ToolAdapter(null)
-        rv.layoutManager = LinearLayoutManager(requireContext())
-        rv.adapter = adapter
+        val adapter = ToolAdapter()
+        rvInstalled.layoutManager = LinearLayoutManager(requireContext())
+        rvInstalled.adapter = adapter
 
         lifecycleScope.launch {
-            viewModel.tools.collect { tools ->
+            viewModel.allTools.collect { tools ->
                 val installed = tools.filter { isPackageInstalled(it.packageName) }
+                val updates   = installed.filter { hasUpdate(it) }
+
+                tvInstalledCount.text = "${installed.size} app${if (installed.size != 1) "s" else ""} installed"
+
+                if (updates.isNotEmpty()) {
+                    tvUpdateBadge.visibility = View.VISIBLE
+                    tvUpdateBadge.text = "${updates.size} update${if (updates.size != 1) "s" else ""} available"
+                } else {
+                    tvUpdateBadge.visibility = View.GONE
+                }
+
                 if (installed.isEmpty()) {
-                    rv.visibility = View.GONE
+                    rvInstalled.visibility = View.GONE
                     tvEmpty.visibility = View.VISIBLE
                 } else {
-                    rv.visibility = View.VISIBLE
+                    rvInstalled.visibility = View.VISIBLE
                     tvEmpty.visibility = View.GONE
                     adapter.submitList(installed)
                 }
             }
         }
 
-        if (viewModel.tools.value.isEmpty()) {
-            viewModel.fetchTools()
-        }
+        if (viewModel.allTools.value.isEmpty()) viewModel.fetchTools()
     }
 
-    private fun isPackageInstalled(packageName: String): Boolean {
-        if (packageName.isEmpty()) return false
+    private fun isPackageInstalled(pkg: String): Boolean {
+        if (pkg.isEmpty()) return false
+        return try { requireContext().packageManager.getPackageInfo(pkg, 0); true }
+        catch (_: PackageManager.NameNotFoundException) { false }
+    }
+
+    private fun hasUpdate(tool: ToolItem): Boolean {
+        if (tool.packageName.isEmpty()) return false
         return try {
-            requireContext().packageManager.getPackageInfo(packageName, 0)
-            true
-        } catch (e: PackageManager.NameNotFoundException) {
-            false
-        }
+            val info = requireContext().packageManager.getPackageInfo(tool.packageName, 0)
+            info.versionName != tool.version
+        } catch (_: PackageManager.NameNotFoundException) { false }
     }
 }

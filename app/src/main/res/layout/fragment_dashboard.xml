@@ -1,25 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/bg_screen">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvInstalled"
+    <!-- Header -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingTop="8dp"
-        android:paddingBottom="12dp" />
-
-    <TextView
-        android:id="@+id/tvEmpty"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="No installed tools yet"
-        android:textColor="@color/text_hint"
-        android:textSize="15sp"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="My Apps"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:fontFamily="sans-serif-medium" />
+
+        <TextView
+            android:id="@+id/tvInstalledCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="@color/text_hint"
+            android:layout_marginTop="2dp"
+            android:text="0 apps installed" />
+    </LinearLayout>
+
+    <!-- Update Banner -->
+    <TextView
+        android:id="@+id/tvUpdateBadge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔄 2 updates available"
+        android:textColor="@color/on_primary"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:background="@color/primary"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="10dp"
         android:visibility="gone" />
-</FrameLayout>
+
+    <!-- List -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvInstalled"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingTop="8dp"
+            android:paddingBottom="80dp"
+            android:clipToPadding="false"
+            android:scrollbars="none" />
+
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:text="No apps installed yet.\nGo to Home to download."
+            android:textColor="@color/text_hint"
+            android:textSize="15sp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+</LinearLayout>

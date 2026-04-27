@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.*
 
 class ProfileFragment : Fragment() {
@@ -24,7 +25,7 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // App version
+        // Versi app
         val tvAppVersion = view.findViewById<TextView>(R.id.tvAppVersion)
         try {
             val info = requireContext().packageManager
@@ -32,7 +33,7 @@ class ProfileFragment : Fragment() {
             tvAppVersion.text = "v${info.versionName}"
         } catch (_: Exception) {}
 
-        // Check updates
+        // Cek update — pakai ViewModel + Repository baru
         view.findViewById<TextView>(R.id.tvCheckUpdate).setOnClickListener {
             checkForUpdates()
         }
@@ -47,50 +48,60 @@ class ProfileFragment : Fragment() {
             openLink("https://github.com/Moniop12/APK.git")
         }
 
-        // Refresh JSON
+        // Refresh data (paksa fetch ulang ke server)
         view.findViewById<TextView>(R.id.tvRefreshData)?.setOnClickListener {
             viewModel.refresh()
-            Toast.makeText(requireContext(), "Refreshing tool list…", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Memuat ulang daftar tools…", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun checkForUpdates() {
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch {
             try {
-                val tools = withContext(Dispatchers.IO) {
-                    ToolsRepository.fetchTools(ToolsViewModel.JSON_URL)
+                // Gunakan fetchRawJson + parseToolsJson sesuai API baru
+                val json  = withContext(Dispatchers.IO) {
+                    ToolsRepository.fetchRawJson(ToolsViewModel.JSON_URL)
                 }
+                val tools = ToolsRepository.parseToolsJson(json)
+
                 val updates = tools.filter { tool ->
-                    if (tool.packageName.isEmpty()) false
-                    else {
-                        try {
-                            val info = requireContext().packageManager
-                                .getPackageInfo(tool.packageName, 0)
-                            info.versionName != tool.version
-                        } catch (_: PackageManager.NameNotFoundException) { false }
+                    when {
+                        tool.packageName.isEmpty() -> false
+                        tool.forceUpdate           -> true
+                        else -> {
+                            try {
+                                val info = requireContext().packageManager
+                                    .getPackageInfo(tool.packageName, 0)
+                                info.versionName != tool.version
+                            } catch (_: PackageManager.NameNotFoundException) { false }
+                        }
                     }
                 }
+
                 if (updates.isEmpty()) {
-                    Toast.makeText(requireContext(), "✓ All tools up to date", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "✓ Semua tools sudah terbaru", Toast.LENGTH_SHORT).show()
                 } else {
-                    val msg = updates.joinToString("\n") {
-                        "• ${it.name} → v${it.version}" +
-                                if (it.changelog.isNotBlank()) "\n  ${it.changelog}" else ""
+                    val msg = updates.joinToString("\n") { tool ->
+                        "• ${tool.name} → v${tool.version}" +
+                            if (tool.changelog.isNotBlank()) "\n  ${tool.changelog}" else ""
                     }
                     AlertDialog.Builder(requireContext())
-                        .setTitle("${updates.size} Update(s) Available")
-                        .setMessage("$msg\n\nGo to Home tab to install.")
+                        .setTitle("${updates.size} Update Tersedia")
+                        .setMessage("$msg\n\nBuka tab Home untuk install.")
                         .setPositiveButton("OK", null)
                         .show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Update check failed: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(),
+                    "Cek update gagal: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
     private fun openLink(url: String) {
         try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
-        catch (_: Exception) { Toast.makeText(requireContext(), "No browser found", Toast.LENGTH_SHORT).show() }
+        catch (_: Exception) {
+            Toast.makeText(requireContext(), "Tidak ada browser", Toast.LENGTH_SHORT).show()
+        }
     }
 }

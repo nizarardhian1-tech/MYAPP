@@ -11,15 +11,13 @@
     "developer": "mondev",
     "size": "",
     "changelog": "",
-    "tags": [
-      "dev"
-    ],
+    "tags": ["dev"],
     "screenshots": []
   },
   {
     "name": "C-Compiler Lite.apk",
     "short_desc": "Compiler",
-    "desc": "C-Compiler Lite – Build C/C++ directly on Android\n\nWhat it does:\nCompile C/C++ source code into binary executables or shared libraries (.so) using Android NDK.\n\nNot AIDE:\nThis is not an IDE. There is no code editor. Write your source with any text editor (QuickEdit, mt manager, etc.), then use this app to build.\n\nRequirements:\n- Android 7.0+\n- Storage permission\n- Install NDK Settings menu\n\nOutput:\n- Binary executable\n- Shared library (.so)\n\nQuick guide:\n1. Create project in /sdcard/CProject/\n2. Place your C/C++ source and Android.mk inside\n3. Open app, select project folder, press Build\n\nNote:\nPlay Protect warning may appear on install.\nTap \"More details\" > \"Install anyway\". The app is safe.",
+    "desc": "C-Compiler Lite – Build C/C++ directly on Android\n\nWhat it does:\nCompile C/C++ source code into binary executables or shared libraries (.so) using Android NDK.\n\nNot AIDE:\nThis is not an IDE. There is no code editor. Write your source with any text editor (QuickEdit, mt manager, etc.), then use this app to build.\n\nRequirements:\n- Android 7.0+\n- Storage permission\n- Install NDK  Settings menu\n\nOutput:\n- Binary executable\n- Shared library (.so)\n\nQuick guide:\n1. Create project in /sdcard/CProject/\n2. Place your C/C++ source and Android.mk inside\n3. Open app, select project folder, press Build\n\nNote:\nPlay Protect warning may appear on install.\nTap \"More details\" > \"Install anyway\". The app is safe.",
     "version": "1.0.0-beta (2)",
     "package_name": "com.ccompile.lite",
     "apk_url": "https://github.com/Moniop12/APK/releases/download/v1.0/C-Compiler.Lite.apk",
@@ -28,9 +26,7 @@
     "developer": "mondev",
     "size": "7,26M",
     "changelog": "",
-    "tags": [
-      "dev"
-    ],
+    "tags": ["dev"],
     "screenshots": []
   }
 ]

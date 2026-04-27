@@ -1,253 +1,499 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>&#128230; Universal JSON Generator — mondev</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background: #f5f7fa; font-family: 'Segoe UI', sans-serif; }
-    .card { border: none; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); margin-bottom: 20px; }
-    .card-header { background: white; border-bottom: 1px solid #edf2f7; font-weight: 600; font-size: 1.1rem; padding: 16px 20px; border-radius: 16px 16px 0 0 !important; }
-    .remove-btn { cursor: pointer; opacity: 0.7; transition: 0.2s; }
-    .remove-btn:hover { opacity: 1; }
-    textarea.json-output { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85rem; height: 320px; background: #1e293b; color: #e2e8f0; border: none; border-radius: 12px; }
-    .preset-box { background: white; border-radius: 12px; padding: 16px; }
-    .btn-primary { background: #10b981; border: none; }
-    .btn-primary:hover { background: #059669; }
-    .btn-outline-primary { border-color: #10b981; color: #10b981; }
-    .btn-outline-primary:hover { background: #10b981; color: white; }
-    .form-label { font-weight: 500; font-size: 0.85rem; color: #475569; margin-bottom: 4px; }
-    .form-control, .form-select { border-radius: 10px; border: 1px solid #e2e8f0; padding: 10px 14px; }
-    .form-control:focus, .form-select:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
-    .app-entry { animation: fadeIn 0.25s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    hr { opacity: 0.5; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON Generator — mondev</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  :root {
+    --green: #10b981; --green-dark: #059669;
+    --bg: #f1f5f9; --card-bg: #fff;
+    --border: #e2e8f0; --text: #1e293b; --muted: #64748b;
+  }
+  body { background: var(--bg); font-family: 'Segoe UI', sans-serif; color: var(--text); }
+  .page-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white; padding: 32px 0 24px; margin-bottom: 28px; }
+  .card { border: none; border-radius: 14px; box-shadow: 0 1px 8px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .card-header { background: var(--card-bg); border-bottom: 1px solid var(--border);
+    font-weight: 600; padding: 14px 18px; border-radius: 14px 14px 0 0 !important;
+    display: flex; align-items: center; justify-content: space-between; }
+  .card-header .type-badge { font-size: .7rem; padding: 3px 10px; border-radius: 20px;
+    font-weight: 600; letter-spacing: .5px; }
+  .badge-apk    { background: #dcfce7; color: #166534; }
+  .badge-script { background: #fef3c7; color: #92400e; }
+  .badge-zip    { background: #dbeafe; color: #1e40af; }
+  .badge-binary { background: #f3e8ff; color: #6b21a8; }
+  .badge-link   { background: #fee2e2; color: #991b1b; }
+  .remove-btn { cursor: pointer; color: #ef4444; opacity: .7; transition: .2s; font-size: 1.1rem; }
+  .remove-btn:hover { opacity: 1; }
+  .form-label { font-weight: 500; font-size: .82rem; color: var(--muted); margin-bottom: 3px; }
+  .form-control, .form-select {
+    border-radius: 8px; border: 1px solid var(--border); padding: 8px 12px; font-size: .88rem; }
+  .form-control:focus, .form-select:focus {
+    border-color: var(--green); box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+  .json-out { font-family: 'Fira Code', 'Cascadia Code', monospace; font-size: .8rem;
+    height: 340px; background: #0f172a; color: #94a3b8; border: none; border-radius: 10px; }
+  .btn-green { background: var(--green); border: none; color: white; }
+  .btn-green:hover { background: var(--green-dark); color: white; }
+  .btn-outline-green { border: 1.5px solid var(--green); color: var(--green); background: transparent; }
+  .btn-outline-green:hover { background: var(--green); color: white; }
+  .section-title { font-size: .72rem; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--muted); margin: 12px 0 6px; }
+  .preset-row { background: #f8fafc; border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
+  .app-entry { animation: slideIn .2s ease; }
+  @keyframes slideIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .type-section { background: #f8fafc; border-radius: 8px; padding: 10px 12px; border: 1px dashed var(--border); margin-top: 4px; }
+  hr.soft { border-color: var(--border); opacity: .6; }
+  .add-btns .btn { border-radius: 20px; font-size: .82rem; padding: 6px 14px; }
+  .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+    padding: 10px 14px; font-size: .82rem; color: #1e40af; }
+  .warn-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px;
+    padding: 10px 14px; font-size: .82rem; color: #92400e; }
+</style>
 </head>
-<body class="container py-4">
-  <div class="text-center mb-4">
-    <h2 class="fw-bold">&#128736;&#65039; Universal JSON Generator</h2>
-    <p class="text-muted">Untuk AndroidTools — mondev</p>
-  </div>
+<body>
 
-  <div class="card">
-    <div class="card-header">&#9881;&#65039; Preset URL (opsional)</div>
-    <div class="card-body preset-box">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Base URL untuk Ikon</label>
-          <input type="text" class="form-control" id="presetIconBase"
-                 placeholder="https://raw.githubusercontent.com/.../icons/"
-                 onchange="saveAllData()">
+<div class="page-header">
+  <div class="container">
+    <h4 class="fw-bold mb-1">&#128736;&#65039; AndroidTools JSON Generator</h4>
+    <div style="color:#94a3b8;font-size:.85rem;">Buat & kelola tools.json untuk repo Anda — by mondev</div>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  <!-- Preset Global -->
+  <div class="card mb-4">
+    <div class="card-header">&#9881;&#65039; Preset URL Global</div>
+    <div class="card-body">
+      <div class="preset-row">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Base URL Ikon</label>
+            <input type="text" class="form-control" id="presetIconBase"
+              placeholder="https://raw.githubusercontent.com/user/repo/main/icons/"
+              oninput="saveAllData()">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Base URL APK</label>
+            <input type="text" class="form-control" id="presetApkBase"
+              placeholder="https://github.com/user/repo/releases/download/v1.0/"
+              oninput="saveAllData()">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Base URL Script / Lua</label>
+            <input type="text" class="form-control" id="presetScriptBase"
+              placeholder="https://raw.githubusercontent.com/user/repo/main/scripts/"
+              oninput="saveAllData()">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Base URL ZIP / Source</label>
+            <input type="text" class="form-control" id="presetZipBase"
+              placeholder="https://github.com/user/repo/archive/refs/tags/"
+              oninput="saveAllData()">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Developer Default</label>
+            <input type="text" class="form-control" id="presetDeveloper"
+              placeholder="mondev" oninput="saveAllData()">
+          </div>
         </div>
-        <div class="col-md-6">
-          <label class="form-label">Base URL untuk APK/Script</label>
-          <input type="text" class="form-control" id="presetApkBase"
-                 placeholder="https://github.com/.../releases/download/"
-                 onchange="saveAllData()">
-        </div>
+      </div>
+
+      <div class="info-box mt-3">
+        <strong>&#128161; Tips URL:</strong> Jika Anda isi Base URL, kolom URL di setiap item cukup diisi nama file-nya saja,
+        misalnya <code>MyApp.apk</code> — akan otomatis digabung saat Generate.
+        Jika URL sudah diawali <code>http</code>, preset diabaikan.
       </div>
     </div>
   </div>
 
-  <div id="apps-container"></div>
-
-  <div class="d-flex flex-wrap gap-2 mb-4">
-    <button class="btn btn-success" onclick="addApp()">&#10133; Tambah Item</button>
-    <button class="btn btn-primary" onclick="generateJSON()">&#128203; Generate JSON</button>
-    <button class="btn btn-outline-primary" onclick="copyToClipboard()">&#128206; Salin JSON</button>
-    <button class="btn btn-outline-secondary" onclick="exportJSON()">&#128190; Ekspor File</button>
+  <!-- Tombol tambah item -->
+  <div class="add-btns d-flex flex-wrap gap-2 mb-3">
+    <button class="btn btn-success" onclick="addItem('apk')">&#43; APK</button>
+    <button class="btn btn-warning text-dark" onclick="addItem('script')">&#43; Script / Lua</button>
+    <button class="btn btn-primary" onclick="addItem('zip')">&#43; ZIP / Source</button>
+    <button class="btn btn-secondary" onclick="addItem('binary')">&#43; Binary</button>
+    <button class="btn btn-danger" onclick="addItem('link')">&#43; Link Eksternal</button>
   </div>
 
+  <!-- Container items -->
+  <div id="items-container"></div>
+
+  <!-- Action buttons -->
+  <div class="d-flex flex-wrap gap-2 mb-4 mt-2">
+    <button class="btn btn-green" onclick="generateJSON()">&#128203; Generate JSON</button>
+    <button class="btn btn-outline-green" onclick="copyJSON()">&#128206; Salin</button>
+    <button class="btn btn-outline-secondary" onclick="exportJSON()">&#128190; Ekspor .json</button>
+    <button class="btn btn-outline-danger" onclick="clearAll()">&#128465;&#65039; Bersihkan Semua</button>
+  </div>
+
+  <!-- Output -->
   <div class="card">
-    <div class="card-header">&#128196; Output JSON</div>
-    <div class="card-body">
-      <textarea id="json-output" class="form-control json-output" readonly placeholder="Klik 'Generate JSON'..."></textarea>
+    <div class="card-header">&#128196; Output JSON
+      <span id="jsonStats" style="font-size:.75rem;color:var(--muted);font-weight:400;"></span>
+    </div>
+    <div class="card-body p-2">
+      <textarea id="json-output" class="form-control json-out" readonly
+        placeholder="Klik 'Generate JSON' untuk melihat hasilnya..."></textarea>
     </div>
   </div>
 
-  <script>
-    const STORAGE_KEY = 'mondev_json_gen_v2';
-
-    function getDefaultApps() {
-      return [{
-        name: "DroidForge", short_desc: "Android project generator",
-        desc: "DroidForge — Android Project Scaffolder",
-        version: "1.0", package_name: "com.androidgen.app",
-        apk_url: "", icon_url: "",
-        category: "Tools", developer: "mondev", size: "", changelog: "",
-        tags: ["dev"], screenshots: [], force_update: false, type: "apk"
-      }];
-    }
-
-    function saveAllData() {
-      const apps = collectAppsData();
-      const presets = {
-        iconBase: document.getElementById('presetIconBase').value.trim(),
-        apkBase: document.getElementById('presetApkBase').value.trim()
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ apps, presets }));
-    }
-
-    function loadAllData() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          if (data.presets) {
-            document.getElementById('presetIconBase').value = data.presets.iconBase || '';
-            document.getElementById('presetApkBase').value = data.presets.apkBase || '';
-          }
-          if (data.apps && data.apps.length > 0) {
-            renderApps(data.apps);
-            return;
-          }
-        } catch (e) {}
-      }
-      renderApps(getDefaultApps());
-    }
-
-    function renderApps(apps) {
-      const container = document.getElementById('apps-container');
-      container.innerHTML = '';
-      apps.forEach((app, i) => container.insertAdjacentHTML('beforeend', createAppForm(i, app)));
-    }
-
-    function createAppForm(index, app = {}) {
-      return `
-        <div class="card app-entry" data-index="${index}">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>&#128230; ${esc(app.name || 'Item Baru #' + (index + 1))}</span>
-            <span class="remove-btn text-danger" onclick="removeApp(this)" title="Hapus">&#10005;</span>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Nama <span class="text-danger">*</span></label>
-                <input type="text" class="form-control app-name" value="${esc(app.name || '')}" onchange="saveAllData()">
-                <label class="form-label mt-2">Deskripsi Singkat</label>
-                <input type="text" class="form-control app-short_desc" value="${esc(app.short_desc || '')}" onchange="saveAllData()">
-                <label class="form-label mt-2">Deskripsi Panjang</label>
-                <textarea class="form-control app-desc" rows="3" onchange="saveAllData()">${esc(app.desc || '')}</textarea>
-                <label class="form-label mt-2">Versi</label>
-                <input type="text" class="form-control app-version" value="${esc(app.version || '')}" onchange="saveAllData()">
-                <label class="form-label mt-2">Package Name</label>
-                <input type="text" class="form-control app-package" value="${esc(app.package_name || '')}" onchange="saveAllData()">
-                <label class="form-label mt-2">Tipe</label>
-                <select class="form-select app-type" onchange="saveAllData()">
-                  <option value="apk" ${(app.type || 'apk') === 'apk' ? 'selected' : ''}>APK</option>
-                  <option value="script" ${app.type === 'script' ? 'selected' : ''}>Script</option>
-                  <option value="binary" ${app.type === 'binary' ? 'selected' : ''}>Binary</option>
-                </select>
-                <div class="form-check mt-2">
-                  <input class="form-check-input app-force_update" type="checkbox" id="forceUpdate${index}" ${app.force_update ? 'checked' : ''} onchange="saveAllData()">
-                  <label class="form-check-label" for="forceUpdate${index}">Force Update</label>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Kategori</label>
-                <input type="text" class="form-control app-category" value="${esc(app.category || '')}" onchange="saveAllData()">
-                <label class="form-label mt-2">Developer</label>
-                <input type="text" class="form-control app-developer" value="${esc(app.developer || 'mondev')}" onchange="saveAllData()">
-                <label class="form-label mt-2">Ukuran</label>
-                <input type="text" class="form-control app-size" value="${esc(app.size || '')}" onchange="saveAllData()">
-                <label class="form-label mt-2">Changelog</label>
-                <input type="text" class="form-control app-changelog" value="${esc(app.changelog || '')}" onchange="saveAllData()">
-                <label class="form-label mt-2">APK / File URL</label>
-                <input type="text" class="form-control app-apk_url" value="${esc(app.apk_url || '')}" onchange="saveAllData()">
-                <label class="form-label mt-2">Icon URL</label>
-                <input type="text" class="form-control app-icon_url" value="${esc(app.icon_url || '')}" onchange="saveAllData()">
-                <label class="form-label mt-2">Tags (pisah koma)</label>
-                <input type="text" class="form-control app-tags" value="${esc((app.tags || []).join(', '))}" onchange="saveAllData()">
-                <label class="form-label mt-2">Screenshots (URL per baris)</label>
-                <textarea class="form-control app-screenshots" rows="2" onchange="saveAllData()">${esc((app.screenshots || []).join('\n'))}</textarea>
-              </div>
-            </div>
-          </div>
+  <!-- Panduan JSON -->
+  <div class="card mt-4">
+    <div class="card-header">&#128218; Panduan Field JSON</div>
+    <div class="card-body" style="font-size:.83rem;">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="section-title">&#128241; Field APK</div>
+          <table class="table table-sm table-bordered" style="font-size:.8rem;">
+            <tr><td><code>force_update</code></td><td>true → paksa tombol "Update" muncul</td></tr>
+            <tr><td><code>version</code></td><td>Harus sama dengan versionName di APK</td></tr>
+            <tr><td><code>package_name</code></td><td>com.example.app (wajib untuk deteksi installed)</td></tr>
+          </table>
         </div>
-      `;
+        <div class="col-md-6">
+          <div class="section-title">&#128196; Field Non-APK</div>
+          <table class="table table-sm table-bordered" style="font-size:.8rem;">
+            <tr><td><code>needs_update</code></td><td>true → tombol "Update" muncul</td></tr>
+            <tr><td><code>latest_version</code></td><td>Versi terbaru, ditampilkan di kartu</td></tr>
+            <tr><td><code>type</code></td><td>script / zip / binary / link</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="warn-box mt-2">
+        <strong>&#9888;&#65039; Perhatian:</strong> Setelah edit <code>tools.json</code>, push ke GitHub.
+        App fetch otomatis setiap 24 jam. Untuk update paksa, user perlu klik "Cek Update" di app.
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+const STORE_KEY = 'mondev_gen_v3';
+
+// ─── Defaults ──────────────────────────────────────────────────────────────
+const DEFAULT_APK = {
+  type:'apk', name:'', short_desc:'', desc:'', version:'1.0',
+  package_name:'', apk_url:'', icon_url:'', category:'Tools',
+  developer:'', size:'', changelog:'', tags:'', screenshots:'',
+  force_update:false
+};
+const DEFAULT_SCRIPT = {
+  type:'script', name:'', short_desc:'', desc:'', version:'1.0',
+  apk_url:'', icon_url:'', category:'Scripts', developer:'',
+  size:'', changelog:'', tags:'', screenshots:'',
+  needs_update:false, latest_version:''
+};
+const DEFAULT_ZIP = {
+  type:'zip', name:'', short_desc:'', desc:'', version:'1.0',
+  apk_url:'', icon_url:'', category:'Source', developer:'',
+  size:'', changelog:'', tags:'', screenshots:'',
+  needs_update:false, latest_version:''
+};
+const DEFAULT_BINARY = {
+  type:'binary', name:'', short_desc:'', desc:'', version:'1.0',
+  apk_url:'', icon_url:'', category:'Binary', developer:'',
+  size:'', changelog:'', tags:'', screenshots:'',
+  needs_update:false, latest_version:''
+};
+const DEFAULT_LINK = {
+  type:'link', name:'', short_desc:'', desc:'', version:'',
+  apk_url:'', icon_url:'', category:'Links', developer:'',
+  size:'', changelog:'', tags:'', screenshots:''
+};
+
+function defaultFor(type) {
+  return { apk:DEFAULT_APK, script:DEFAULT_SCRIPT, zip:DEFAULT_ZIP,
+           binary:DEFAULT_BINARY, link:DEFAULT_LINK }[type] || DEFAULT_APK;
+}
+
+const TYPE_LABEL = { apk:'APK', script:'Script', zip:'ZIP', binary:'Binary', link:'Link' };
+const TYPE_BADGE = { apk:'badge-apk', script:'badge-script', zip:'badge-zip', binary:'badge-binary', link:'badge-link' };
+const TYPE_EMOJI = { apk:'&#128241;', script:'&#128220;', zip:'&#128230;', binary:'&#9881;&#65039;', link:'&#127758;' };
+
+// ─── Render ────────────────────────────────────────────────────────────────
+function renderItem(idx, d) {
+  const isApk    = d.type === 'apk';
+  const isLink   = d.type === 'link';
+  const isNonApk = !isApk;
+  const devPlaceholder = document.getElementById('presetDeveloper')?.value || 'mondev';
+
+  const apkSpecific = isApk ? `
+    <div class="col-md-6">
+      <label class="form-label">Package Name</label>
+      <input type="text" class="form-control f-package_name"
+        value="${esc(d.package_name||'')}" placeholder="com.example.app" oninput="saveAllData()">
+    </div>
+    <div class="col-12">
+      <div class="form-check">
+        <input class="form-check-input f-force_update" type="checkbox" id="fu${idx}" ${d.force_update?'checked':''} onchange="saveAllData()">
+        <label class="form-check-label" for="fu${idx}">
+          <strong>Force Update</strong> — paksa tombol "Update" muncul tanpa cek versi
+        </label>
+      </div>
+    </div>` : '';
+
+  const nonApkSpecific = isNonApk ? `
+    <div class="col-md-6">
+      <label class="form-label">Latest Version (opsional)</label>
+      <input type="text" class="form-control f-latest_version"
+        value="${esc(d.latest_version||'')}" placeholder="1.1" oninput="saveAllData()">
+      <div style="font-size:.75rem;color:var(--muted);margin-top:3px;">
+        Jika beda dari <em>versi</em>, tombol "Update" muncul otomatis
+      </div>
+    </div>
+    ${!isLink ? `<div class="col-12">
+      <div class="form-check">
+        <input class="form-check-input f-needs_update" type="checkbox" id="nu${idx}" ${d.needs_update?'checked':''} onchange="saveAllData()">
+        <label class="form-check-label" for="nu${idx}">
+          <strong>Needs Update</strong> — paksa tombol "Update" muncul
+        </label>
+      </div>
+    </div>` : ''}` : '';
+
+  const urlLabel = isLink ? 'URL Tujuan (eksternal)' : 'URL File';
+  const urlPlaceholder = isLink ? 'https://github.com/...' :
+    (d.type==='apk' ? 'App.apk' : d.type==='script' ? 'script.lua' : d.type==='zip' ? 'source.zip' : 'binary');
+
+  return `
+<div class="card app-entry" data-idx="${idx}">
+  <div class="card-header">
+    <span>${TYPE_EMOJI[d.type]||''} <span class="item-title">${esc(d.name||'Item #'+(idx+1))}</span></span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="type-badge ${TYPE_BADGE[d.type]}">${TYPE_LABEL[d.type]}</span>
+      <span class="remove-btn" onclick="removeItem(this)" title="Hapus">&#10005;</span>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row g-2">
+      <!-- Kiri -->
+      <div class="col-md-6">
+        <div class="section-title">&#128196; Informasi Utama</div>
+        <label class="form-label">Nama <span class="text-danger">*</span></label>
+        <input type="text" class="form-control f-name"
+          value="${esc(d.name||'')}" placeholder="Nama tool / file"
+          oninput="this.closest('.app-entry').querySelector('.item-title').textContent=this.value||'Item';saveAllData()">
+
+        <label class="form-label mt-2">Deskripsi Singkat</label>
+        <input type="text" class="form-control f-short_desc"
+          value="${esc(d.short_desc||'')}" placeholder="Satu kalimat" oninput="saveAllData()">
+
+        <label class="form-label mt-2">Deskripsi Lengkap</label>
+        <textarea class="form-control f-desc" rows="4"
+          placeholder="Deskripsi detail (bisa HTML sederhana)" oninput="saveAllData()">${esc(d.desc||'')}</textarea>
+
+        ${!isLink ? `<label class="form-label mt-2">Versi</label>
+        <input type="text" class="form-control f-version"
+          value="${esc(d.version||'')}" placeholder="1.0" oninput="saveAllData()">
+
+        <label class="form-label mt-2">Changelog</label>
+        <input type="text" class="form-control f-changelog"
+          value="${esc(d.changelog||'')}" placeholder="Apa yang baru?" oninput="saveAllData()">` : ''}
+
+        ${apkSpecific}
+        ${nonApkSpecific}
+      </div>
+      <!-- Kanan -->
+      <div class="col-md-6">
+        <div class="section-title">&#128279; URL & Metadata</div>
+
+        <label class="form-label">${urlLabel} <span class="text-danger">*</span></label>
+        <input type="text" class="form-control f-apk_url"
+          value="${esc(d.apk_url||'')}" placeholder="${urlPlaceholder}" oninput="saveAllData()">
+
+        <label class="form-label mt-2">Icon URL</label>
+        <input type="text" class="form-control f-icon_url"
+          value="${esc(d.icon_url||'')}" placeholder="icon.png" oninput="saveAllData()">
+
+        <label class="form-label mt-2">Kategori</label>
+        <input type="text" class="form-control f-category"
+          value="${esc(d.category||'')}" placeholder="Tools" oninput="saveAllData()">
+
+        <label class="form-label mt-2">Developer</label>
+        <input type="text" class="form-control f-developer"
+          value="${esc(d.developer||'')}" placeholder="${devPlaceholder}" oninput="saveAllData()">
+
+        <label class="form-label mt-2">Ukuran</label>
+        <input type="text" class="form-control f-size"
+          value="${esc(d.size||'')}" placeholder="2.3 MB" oninput="saveAllData()">
+
+        <label class="form-label mt-2">Tags (pisah koma)</label>
+        <input type="text" class="form-control f-tags"
+          value="${esc(Array.isArray(d.tags)?d.tags.join(', '):d.tags||'')}"
+          placeholder="dev, tools, android" oninput="saveAllData()">
+
+        <label class="form-label mt-2">Screenshots (URL per baris)</label>
+        <textarea class="form-control f-screenshots" rows="2"
+          placeholder="https://..." oninput="saveAllData()">${esc(Array.isArray(d.screenshots)?d.screenshots.join('\n'):d.screenshots||'')}</textarea>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+// ─── CRUD ─────────────────────────────────────────────────────────────────
+function addItem(type) {
+  const dev = document.getElementById('presetDeveloper').value.trim();
+  const base = { ...defaultFor(type), developer: dev };
+  const container = document.getElementById('items-container');
+  const idx = container.children.length;
+  container.insertAdjacentHTML('beforeend', renderItem(idx, base));
+  saveAllData();
+}
+
+function removeItem(btn) { btn.closest('.card').remove(); saveAllData(); }
+
+function clearAll() {
+  if (!confirm('Hapus semua item?')) return;
+  document.getElementById('items-container').innerHTML = '';
+  document.getElementById('json-output').value = '';
+  saveAllData();
+}
+
+// ─── Collect ───────────────────────────────────────────────────────────────
+function collectAll() {
+  const iconBase   = document.getElementById('presetIconBase').value.trim();
+  const apkBase    = document.getElementById('presetApkBase').value.trim();
+  const scriptBase = document.getElementById('presetScriptBase').value.trim();
+  const zipBase    = document.getElementById('presetZipBase').value.trim();
+  const devDefault = document.getElementById('presetDeveloper').value.trim() || 'mondev';
+
+  const entries = document.querySelectorAll('.app-entry');
+  return Array.from(entries).map(e => {
+    const get = cls => e.querySelector(cls)?.value.trim() || '';
+    const chk = cls => e.querySelector(cls)?.checked || false;
+    const type = e.dataset.type || (e.querySelector('.badge-apk') ? 'apk' :
+                 e.querySelector('.badge-script') ? 'script' :
+                 e.querySelector('.badge-zip') ? 'zip' :
+                 e.querySelector('.badge-binary') ? 'binary' : 'link');
+    // Deteksi type dari badge
+    let detectedType = 'apk';
+    const badge = e.querySelector('.type-badge');
+    if (badge) {
+      if (badge.classList.contains('badge-script')) detectedType = 'script';
+      else if (badge.classList.contains('badge-zip')) detectedType = 'zip';
+      else if (badge.classList.contains('badge-binary')) detectedType = 'binary';
+      else if (badge.classList.contains('badge-link')) detectedType = 'link';
     }
 
-    function esc(s) {
-      return String(s)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;');
+    let rawUrl = get('.f-apk_url');
+    let rawIcon = get('.f-icon_url');
+
+    // Terapkan base URL
+    if (rawUrl && !rawUrl.startsWith('http')) {
+      const base = detectedType === 'apk' ? apkBase :
+                   detectedType === 'script' ? scriptBase :
+                   detectedType === 'zip' ? zipBase : '';
+      if (base) rawUrl = base.replace(/\/$/, '') + '/' + rawUrl;
+    }
+    if (rawIcon && !rawIcon.startsWith('http') && iconBase)
+      rawIcon = iconBase.replace(/\/$/, '') + '/' + rawIcon;
+
+    const tags = get('.f-tags').split(',').map(t=>t.trim()).filter(Boolean);
+    const screenshots = get('.f-screenshots').split('\n').map(s=>s.trim()).filter(Boolean);
+
+    const obj = {
+      type: detectedType,
+      name: get('.f-name'),
+      short_desc: get('.f-short_desc'),
+      desc: get('.f-desc'),
+      version: get('.f-version') || '1.0',
+      apk_url: rawUrl,
+      icon_url: rawIcon,
+      category: get('.f-category') || 'Tools',
+      developer: get('.f-developer') || devDefault,
+      size: get('.f-size'),
+      changelog: get('.f-changelog'),
+      tags, screenshots
+    };
+
+    if (detectedType === 'apk') {
+      obj.package_name = get('.f-package_name');
+      obj.force_update = chk('.f-force_update');
+    } else {
+      obj.latest_version = get('.f-latest_version') || '';
+      if (detectedType !== 'link') obj.needs_update = chk('.f-needs_update');
     }
 
-    function addApp() {
-      const container = document.getElementById('apps-container');
-      const index = container.children.length;
-      container.insertAdjacentHTML('beforeend', createAppForm(index));
-      saveAllData();
-    }
+    return obj;
+  });
+}
 
-    function removeApp(btn) {
-      btn.closest('.card').remove();
-      saveAllData();
-    }
+// ─── Generate ──────────────────────────────────────────────────────────────
+function generateJSON() {
+  const items = collectAll();
+  const errors = [];
+  items.forEach((item, i) => {
+    if (!item.name.trim()) errors.push(`Item #${i+1}: Nama wajib diisi`);
+    if (!item.apk_url.trim()) errors.push(`Item #${i+1} (${item.name||'?'}): URL wajib diisi`);
+  });
+  if (errors.length) { alert('⚠️ Ada yang belum lengkap:\n\n' + errors.join('\n')); return; }
 
-    function collectAppsData() {
-      const entries = document.querySelectorAll('.app-entry');
-      const apps = [];
-      const iconBase = document.getElementById('presetIconBase').value.trim();
-      const apkBase  = document.getElementById('presetApkBase').value.trim();
-      entries.forEach(entry => {
-        const name = entry.querySelector('.app-name')?.value.trim() || '';
-        let icon = entry.querySelector('.app-icon_url')?.value.trim() || '';
-        if (iconBase && icon && !icon.startsWith('http')) icon = iconBase + icon;
-        let apk = entry.querySelector('.app-apk_url')?.value.trim() || '';
-        if (apkBase && apk && !apk.startsWith('http')) apk = apkBase + apk;
-        apps.push({
-          name,
-          short_desc:   entry.querySelector('.app-short_desc')?.value.trim() || '',
-          desc:         entry.querySelector('.app-desc')?.value.trim() || '',
-          version:      entry.querySelector('.app-version')?.value.trim() || '',
-          package_name: entry.querySelector('.app-package')?.value.trim() || '',
-          apk_url:      apk,
-          icon_url:     icon,
-          category:     entry.querySelector('.app-category')?.value.trim() || '',
-          developer:    entry.querySelector('.app-developer')?.value.trim() || 'mondev',
-          size:         entry.querySelector('.app-size')?.value.trim() || '',
-          changelog:    entry.querySelector('.app-changelog')?.value.trim() || '',
-          tags:         (entry.querySelector('.app-tags')?.value || '').split(',').map(t => t.trim()).filter(t => t),
-          screenshots:  (entry.querySelector('.app-screenshots')?.value || '').split('\n').map(s => s.trim()).filter(s => s),
-          force_update: entry.querySelector('.app-force_update')?.checked || false,
-          type:         entry.querySelector('.app-type')?.value || 'apk'
-        });
-      });
-      return apps;
-    }
+  const json = JSON.stringify(items, null, 2);
+  document.getElementById('json-output').value = json;
+  document.getElementById('jsonStats').textContent =
+    ` — ${items.length} item, ${(new Blob([json]).size/1024).toFixed(1)} KB`;
+  saveAllData();
+}
 
-    function generateJSON() {
-      const apps = collectAppsData();
-      for (let a of apps) {
-        if (!a.name.trim()) { alert('Nama aplikasi wajib diisi!'); return; }
-      }
-      document.getElementById('json-output').value = JSON.stringify(apps, null, 2);
-      saveAllData();
-    }
+function copyJSON() {
+  const v = document.getElementById('json-output').value;
+  if (!v) { alert('Generate dulu!'); return; }
+  navigator.clipboard.writeText(v).then(() => alert('✅ JSON berhasil disalin!'));
+}
 
-    function copyToClipboard() {
-      const ta = document.getElementById('json-output');
-      if (!ta.value) { alert('Generate dulu!'); return; }
-      navigator.clipboard.writeText(ta.value).then(() => alert('Tersalin!'));
-    }
+function exportJSON() {
+  const v = document.getElementById('json-output').value;
+  if (!v) { alert('Generate dulu!'); return; }
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([v], {type:'application/json'})),
+    download: 'tools.json'
+  });
+  a.click();
+}
 
-    function exportJSON() {
-      const ta = document.getElementById('json-output');
-      if (!ta.value) { alert('Generate dulu!'); return; }
-      const blob = new Blob([ta.value], {type: 'application/json'});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'tools.json';
-      a.click();
-    }
+// ─── Persist ───────────────────────────────────────────────────────────────
+function saveAllData() {
+  const presets = {
+    iconBase:   document.getElementById('presetIconBase').value,
+    apkBase:    document.getElementById('presetApkBase').value,
+    scriptBase: document.getElementById('presetScriptBase').value,
+    zipBase:    document.getElementById('presetZipBase').value,
+    developer:  document.getElementById('presetDeveloper').value
+  };
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ presets, items: collectAll() })); }
+  catch(_) {}
+}
 
-    window.addEventListener('DOMContentLoaded', loadAllData);
-    setInterval(saveAllData, 3000);
-  </script>
+function loadAllData() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) { addItem('apk'); return; }
+    const { presets = {}, items = [] } = JSON.parse(raw);
+
+    document.getElementById('presetIconBase').value   = presets.iconBase   || '';
+    document.getElementById('presetApkBase').value    = presets.apkBase    || '';
+    document.getElementById('presetScriptBase').value = presets.scriptBase || '';
+    document.getElementById('presetZipBase').value    = presets.zipBase    || '';
+    document.getElementById('presetDeveloper').value  = presets.developer  || '';
+
+    const container = document.getElementById('items-container');
+    container.innerHTML = '';
+    if (items.length === 0) { addItem('apk'); return; }
+    items.forEach((item, i) => container.insertAdjacentHTML('beforeend', renderItem(i, item)));
+  } catch(e) { addItem('apk'); }
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.addEventListener('DOMContentLoaded', loadAllData);
+setInterval(saveAllData, 5000);
+</script>
 </body>
 </html>

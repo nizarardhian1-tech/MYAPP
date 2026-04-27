@@ -15,24 +15,50 @@
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:paddingTop="16dp"
-        android:paddingBottom="8dp">
+        android:paddingBottom="4dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🛠 AndroidTools"
+            android:text="&#128296; AndroidTools"
             android:textSize="22sp"
             android:textStyle="bold"
             android:textColor="@color/text_primary"
             android:fontFamily="sans-serif-medium" />
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Cache status + Cek Update button dalam satu baris -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Your personal app store"
-            android:textSize="13sp"
-            android:textColor="@color/text_hint"
-            android:layout_marginTop="2dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/tvCacheStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="12sp"
+                android:textColor="@color/text_hint"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/btnCheckUpdate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="&#8635; Cek Update"
+                android:textSize="12sp"
+                android:textColor="@color/primary"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:background="@drawable/bg_category_badge"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Search Bar -->
@@ -41,6 +67,7 @@
         android:layout_height="wrap_content"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
+        android:paddingTop="8dp"
         android:paddingBottom="10dp">
 
         <EditText
@@ -48,13 +75,13 @@
             android:layout_width="match_parent"
             android:layout_height="44dp"
             android:background="@drawable/bg_search"
-            android:hint="Search tools…"
+            android:hint="Cari tools&#8230;"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:paddingLeft="16dp"
-        android:paddingRight="16dp"
+            android:paddingRight="16dp"
             android:paddingTop="0dp"
-        android:paddingBottom="0dp"
+            android:paddingBottom="0dp"
             android:inputType="text"
             android:imeOptions="actionSearch"
             android:singleLine="true" />
@@ -96,7 +123,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="No tools found"
+                android:gravity="center"
+                android:text="Tidak ada tools ditemukan"
                 android:textColor="@color/text_hint"
                 android:textSize="15sp"
                 android:visibility="gone" />
